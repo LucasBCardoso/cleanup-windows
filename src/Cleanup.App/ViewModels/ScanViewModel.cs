@@ -78,7 +78,9 @@ public sealed partial class ScanViewModel : SelectableList
         SetGroups(reports.Where(r => r.Items.Count > 0).Select(r => (r.Title, (IEnumerable<ScanItem>)r.Items)), i => i.Risk == RiskLevel.Safe);
         Skipped = reports.SelectMany(r => r.Skipped).ToList();
         var failures = outcomes.OfType<ScanOutcome.Failure>().Select(f => $"{f.Title}: {f.Message}").ToList();
-        Banner = failures.Count > 0 ? new Banner(BannerKind.Error, $"{failures.Count} verificação(ões) falharam.", failures) : Banner.Skipped(Skipped);
+        Banner = services.IgnoreListError is { } ignoreError ? new Banner(BannerKind.Error, ignoreError)
+            : failures.Count > 0 ? new Banner(BannerKind.Error, $"{failures.Count} verificação(ões) falharam.", failures)
+            : Banner.Skipped(Skipped);
         Phase = ScanPhase.Results;
         ScanCommand.NotifyCanExecuteChanged();
     }
@@ -99,11 +101,18 @@ public sealed partial class ScanViewModel : SelectableList
         IsCleaning = true;
         try
         {
-            // The Recycle Bin part first: a dismissed UAC prompt must not cost the user their other items.
+            // The Recycle Bin part first, recorded right away: a dismissed or failed UAC prompt (or closing the app while
+            // it's open) must not cost the user their other items or the way to undo them.
             var result = await services.CleanAsync(chosen.Where(i => !i.RequiresAdmin).ToList());
+            await services.RecordAsync(result, null, "Smart Scan");
+            Drop(result.Removed.Select(i => i.Id).ToHashSet());
             var admin = await services.CleanAsAdminAsync(chosen.Where(i => i.RequiresAdmin).ToList());
-            await services.RecordAsync(result, admin.Removed, "Smart Scan");
-            Drop(result.Removed.Concat(admin.Removed).Select(i => i.Id).ToHashSet());
+            if (admin.Removed.Count > 0)
+            {
+                await services.RecordAsync(result with { Removed = [], RecycleBinLocations = new Dictionary<string, string>() }, admin.Removed,
+                    "Smart Scan (sistema)");
+            }
+            Drop(admin.Removed.Select(i => i.Id).ToHashSet());
             Banner = Banner.FromClean(result, admin);
         }
         catch (Exception e)

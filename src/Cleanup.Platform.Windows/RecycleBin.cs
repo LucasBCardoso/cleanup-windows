@@ -56,28 +56,26 @@ public static partial class RecycleBin
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException) { return null; }
     }
 
-    /// <summary>$I files of this user on the drives of <paramref name="paths"/>, deleted at or after <paramref name="sinceUtc"/>.</summary>
-    public static List<InfoFile> RecentInfoFiles(IEnumerable<string> paths, DateTime sinceUtc)
+    /// <summary>The $I files of this user on the drives of <paramref name="paths"/> right now (full paths).</summary>
+    public static HashSet<string> InfoFileNames(IEnumerable<string> paths)
     {
-        var result = new List<InfoFile>();
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var drive in paths.Select(Path.GetPathRoot).OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase))
         {
             var folder = FolderFor(drive);
             if (!Directory.Exists(folder)) continue;
-            IEnumerable<FileInfo> infos;
-            try
-            {
-                infos = new DirectoryInfo(folder).EnumerateFiles("$I*", new EnumerationOptions { IgnoreInaccessible = true })
-                    .Where(f => f.LastWriteTimeUtc >= sinceUtc.AddSeconds(-5)).ToList();
-            }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { continue; }
-            foreach (var info in infos)
-            {
-                if (ReadInfo(info.FullName) is { } parsed && parsed.DeletedUtc >= sinceUtc.AddSeconds(-5)) result.Add(parsed);
-            }
+            try { names.UnionWith(Directory.EnumerateFiles(folder, "$I*", new EnumerationOptions { IgnoreInaccessible = true })); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
         }
-        return result;
+        return names;
     }
+
+    /// <summary>
+    /// $I files of this user on the drives of <paramref name="paths"/> that weren't there before (<paramref name="before"/>):
+    /// what this recycle created, never an older item that happens to share an original path.
+    /// </summary>
+    public static List<InfoFile> NewInfoFiles(IEnumerable<string> paths, IReadOnlySet<string> before) =>
+        InfoFileNames(paths).Where(n => !before.Contains(n)).Select(ReadInfo).OfType<InfoFile>().ToList();
 
     /// <summary>
     /// True for <c>&lt;drive&gt;:\$Recycle.Bin\&lt;current user SID&gt;</c> exactly, with neither component a link, so a
@@ -155,12 +153,25 @@ public sealed class WindowsFileRemover : IFileRemover
 {
     private const int BatchSize = 64;
 
+    /// <summary>
+    /// Unattended (automatic cleaning): the shell must never show a "delete permanently?" dialog, so items the Recycle
+    /// Bin can't take (bigger than its quota, or a drive set to delete immediately) are left in place and reported.
+    /// </summary>
+    public bool Background { get; init; }
+
     public IReadOnlyList<RecycleOutcome> Recycle(IReadOnlyList<string> paths)
     {
         var outcomes = new List<RecycleOutcome>();
+        if (Background)
+        {
+            var refused = paths.Select(p => (Path: p, Reason: RecycleBinLimits.WhyNot(p))).Where(r => r.Reason is not null).ToList();
+            outcomes.AddRange(refused.Select(r => new RecycleOutcome(r.Path, false, null, r.Reason)));
+            var skip = refused.Select(r => r.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            paths = paths.Where(p => !skip.Contains(p)).ToList();
+        }
         foreach (var batch in paths.Chunk(BatchSize))
         {
-            var start = DateTime.UtcNow;
+            var before = RecycleBin.InfoFileNames(batch);
             var error = ShellRecycle(batch);
             var left = batch.Where(Exists).ToList();
             // A failed batch may stop at its first locked item; give the others their own chance.
@@ -169,9 +180,12 @@ public sealed class WindowsFileRemover : IFileRemover
             {
                 foreach (var path in left) retried[path] = ShellRecycle([path]);
             }
-            var located = RecycleBin.RecentInfoFiles(batch, start)
+            // Only $I files this batch created; two new ones for the same path (something else recycled it at the same
+            // moment) can't be told apart, so neither is recorded: not restorable beats restoring the wrong item.
+            var located = RecycleBin.NewInfoFiles(batch, before)
                 .GroupBy(i => i.OriginalPath, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(g => g.Key, g => g.OrderByDescending(i => i.DeletedUtc).First().ItemPath, StringComparer.OrdinalIgnoreCase);
+                .Where(g => g.Count() == 1)
+                .ToDictionary(g => g.Key, g => g.Single().ItemPath, StringComparer.OrdinalIgnoreCase);
             foreach (var path in batch)
             {
                 if (Exists(path))

@@ -84,14 +84,21 @@ public sealed partial class AutoCleanViewModel : ObservableObject
         scan.IsOptimizing = true; // manual cleans wait while it runs
         try
         {
-            var result = await Task.Run(async () =>
+            // One clean at a time across the app; unattended, so the shell may never show a dialog (Background remover).
+            await services.CleanLock.WaitAsync();
+            AutoCleanResult result;
+            try
             {
-                var tasks = ScanEngine.SmartScanTasks(services.Rules, RunningProcesses.Names(), [new RecycleBinTask()]);
-                var outcomes = await new ScanEngine(services.Environment, services.Policy()).RunAsync(tasks);
-                var reports = outcomes.Select(o => o.Report).OfType<ScanReport>().ToList();
-                var cleaner = new Cleaner(services.Policy(), services.Remover);
-                return AutoCleanRunner.Run(reports, settings, cleaner, RecycleBin.FileId, DateTimeOffset.Now);
-            });
+                result = await Task.Run(async () =>
+                {
+                    var tasks = ScanEngine.SmartScanTasks(services.Rules, RunningProcesses.Names(), [new RecycleBinTask()]);
+                    var outcomes = await new ScanEngine(services.Environment, services.Policy()).RunAsync(tasks);
+                    var reports = outcomes.Select(o => o.Report).OfType<ScanReport>().ToList();
+                    var cleaner = new Cleaner(services.Policy(), new WindowsFileRemover { Background = true });
+                    return AutoCleanRunner.Run(reports, settings, cleaner, RecycleBin.FileId, DateTimeOffset.Now);
+                });
+            }
+            finally { services.CleanLock.Release(); }
             if (result.Record is { } record)
             {
                 await Task.Run(() => CleanupHistory.Update(h => h.Adding(record)));

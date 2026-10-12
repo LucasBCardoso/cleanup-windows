@@ -33,20 +33,44 @@ public sealed class AppServices
         }
     }
 
-    /// <summary>A fresh policy each time, so ignore-list changes apply immediately.</summary>
+    /// <summary>
+    /// A fresh policy each time, so ignore-list changes apply immediately. An unreadable ignore list fails closed: the
+    /// policy then refuses everything (and <see cref="IgnoreListError"/> says why), never silently drops the list.
+    /// </summary>
     public SafetyPolicy Policy()
     {
-        try { return new SafetyPolicy(Environment, IgnoreList.Load().Paths); }
-        catch (IgnoreListException) { return new SafetyPolicy(Environment); }
+        try
+        {
+            var policy = new SafetyPolicy(Environment, IgnoreList.Load().Paths);
+            IgnoreListError = null;
+            return policy;
+        }
+        catch (IgnoreListException e)
+        {
+            IgnoreListError = e.Message + " Corrija ou apague o arquivo para voltar a limpar.";
+            return new SafetyPolicy(Environment, blockedReason: "lista de ignorados ilegível");
+        }
     }
+
+    public string? IgnoreListError { get; private set; }
+
+    /// <summary>
+    /// One clean at a time across the app (every module and automatic cleaning): a second one waits instead of
+    /// racing on the same files or the Recycle Bin.
+    /// </summary>
+    public SemaphoreSlim CleanLock { get; } = new(1, 1);
 
     public Restorer.Context RestoreContext() => RecycleBin.RestoreContext(Policy());
 
     public void Ignore(string path) => IgnoreList.Load().Adding(path).Save();
 
     /// <summary>User items to the Recycle Bin (re-checked by the policy), off the UI thread.</summary>
-    public Task<CleanResult> CleanAsync(IReadOnlyList<ScanItem> items, RemovalMode mode = RemovalMode.RecycleBin) =>
-        Task.Run(() => new Cleaner(Policy(), Remover, mode).Clean(items));
+    public async Task<CleanResult> CleanAsync(IReadOnlyList<ScanItem> items, RemovalMode mode = RemovalMode.RecycleBin)
+    {
+        await CleanLock.WaitAsync();
+        try { return await Task.Run(() => new Cleaner(Policy(), Remover, mode).Clean(items)); }
+        finally { CleanLock.Release(); }
+    }
 
     /// <summary>System items through the elevated helper: one UAC prompt; nothing happens when the prompt is cancelled.</summary>
     public async Task<AdminCleaner.Result> CleanAsAdminAsync(IReadOnlyList<ScanItem> items)

@@ -25,6 +25,15 @@ public sealed class RuleScanTask(CleanupRule rule, IReadOnlySet<string>? running
         (@"\Vivaldi\", "vivaldi"), (@"\Opera Software\", "opera"), (@"\Mozilla\Firefox\", "firefox"),
     ];
 
+    /// <summary>
+    /// Rule scans never offer user documents (design §6): a rules.json entry pointing into Documents, Desktop, Pictures,
+    /// Music, Videos or OneDrive finds nothing there. Downloads stays open for the old-installers rule.
+    /// </summary>
+    internal static readonly string[] UserLibraries = ["Documents", "Desktop", "Pictures", "Music", "Videos", "OneDrive", "Favorites", "Contacts"];
+
+    internal static bool InUserLibrary(string path, string home) =>
+        UserLibraries.Any(l => Safety.SafetyPolicy.IsWithin(path, Path.Combine(home, l)));
+
     public ScanReport Scan(ScanEnvironment environment, SafetyPolicy policy, CancellationToken cancellation)
     {
         var items = new List<ScanItem>();
@@ -50,7 +59,7 @@ public sealed class RuleScanTask(CleanupRule rule, IReadOnlySet<string>? running
     {
         var name = Path.GetFileName(path);
         if (Rule.Excludes.Any(e => GlobExpander.Matches(name, e))) return null;
-        if (!policy.Verdict(path).IsAllowed) return null;
+        if (!policy.Verdict(path).IsAllowed || InUserLibrary(path, policy.Environment.Home)) return null;
         var modified = FileMetrics.LastWriteUtc(path);
         if (Rule.MinAgeDays is { } days && (modified is null || now - modified.Value < TimeSpan.FromDays(days))) return null;
         cancellation.ThrowIfCancellationRequested();

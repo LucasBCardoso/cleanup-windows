@@ -76,6 +76,16 @@ public class ScanningTests : IDisposable
     }
 
     [Fact]
+    public void RulesNeverOfferUserDocuments()
+    {
+        home.File(@"Documents\thesis.docx");
+        home.File(@"Downloads\setup.exe");
+        var rule = Rule("custom", @"%USERPROFILE%\Documents\*", @"%USERPROFILE%\Downloads\*");
+        var report = new RuleScanTask(rule).Scan(home.Environment, home.Policy(), CancellationToken.None);
+        Assert.EndsWith("setup.exe", Assert.Single(report.Items).Path);
+    }
+
+    [Fact]
     public void BrowserCachesNeedReviewWhileTheBrowserRuns()
     {
         home.File(@"AppData\Local\Google\Chrome\User Data\Default\Cache\data_1", 100);

@@ -19,9 +19,15 @@ public sealed record IgnoreList(IReadOnlySet<string> Paths)
         try
         {
             var paths = JsonSerializer.Deserialize<List<string>>(File.ReadAllText(path)) ?? [];
+            // Every entry must be a usable absolute path; one bad entry makes the whole list unreadable (fail closed).
+            foreach (var p in paths)
+            {
+                if (string.IsNullOrWhiteSpace(p) || !Path.IsPathFullyQualified(p)) throw new JsonException($"entrada inválida: \"{p}\"");
+                _ = PathUtil.Normalize(p);
+            }
             return new IgnoreList(new HashSet<string>(paths, StringComparer.OrdinalIgnoreCase));
         }
-        catch (Exception e) when (e is JsonException or IOException or UnauthorizedAccessException)
+        catch (Exception e) when (e is JsonException or IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
             throw new IgnoreListException($"A lista de ignorados em {path} não pôde ser lida: {e.Message}", e);
         }

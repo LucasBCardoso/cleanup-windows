@@ -19,6 +19,7 @@ public sealed partial class SafetyPolicy
 {
     public ScanEnvironment Environment { get; }
     public IReadOnlyCollection<string> IgnoredPaths { get; }
+    public string? BlockedReason { get; }
 
     /// <summary>Folders under the Windows folder whose contents may be cleaned (by the elevated helper only).</summary>
     public IReadOnlyList<string> SystemCleanableRoots { get; }
@@ -53,9 +54,11 @@ public sealed partial class SafetyPolicy
         "$Windows.~BT", "$Windows.~WS", "Config.Msi", "Documents and Settings", "PerfLogs",
     ];
 
-    public SafetyPolicy(ScanEnvironment environment, IEnumerable<string>? ignoredPaths = null)
+    /// <param name="blockedReason">When set, every path is denied with this reason (fail closed, e.g. an unreadable ignore list).</param>
+    public SafetyPolicy(ScanEnvironment environment, IEnumerable<string>? ignoredPaths = null, string? blockedReason = null)
     {
         Environment = environment;
+        BlockedReason = blockedReason;
         IgnoredPaths = (ignoredPaths ?? []).Select(PathUtil.Normalize).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         var windows = environment.SystemRoot;
         SystemCleanableRoots =
@@ -69,6 +72,7 @@ public sealed partial class SafetyPolicy
 
     public SafetyVerdict Verdict(string path)
     {
+        if (BlockedReason is { } blocked) return new SafetyVerdict.Denied(blocked);
         if (string.IsNullOrWhiteSpace(path) || !Path.IsPathFullyQualified(path)) return new SafetyVerdict.Denied("caminho relativo");
         // Win32 strips a trailing dot or space, so "Tese.docx " would act on "Tese.docx" — a different file.
         if (path.TrimEnd('\\', '/').Split('\\', '/').Skip(1).Any(c => c.EndsWith('.') || c.EndsWith(' ')))
