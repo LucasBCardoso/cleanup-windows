@@ -11,6 +11,8 @@ public static class ModuleRegistry
 {
     public static UIElement? Create(Module module) => module switch
     {
+        Module.Duplicates => new DuplicatesView(),
+        Module.Developer => new DeveloperView(),
         _ => null,
     };
 }
