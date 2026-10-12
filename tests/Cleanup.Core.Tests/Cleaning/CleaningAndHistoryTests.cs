@@ -76,7 +76,8 @@ public class CleaningAndHistoryTests : IDisposable
     private static CleanupRecord Record(DateTimeOffset date, params CleanupRecord.Entry[] entries) =>
         new() { Date = date, Source = "test", Entries = entries };
 
-    private static CleanupRecord.Entry Entry(string original, string? trash) => new() { OriginalPath = original, TrashPath = trash, Size = 1 };
+    private static CleanupRecord.Entry Entry(string original, string? trash) =>
+        new() { OriginalPath = original, TrashPath = trash, Size = 1, FileId = trash is null ? null : "same" };
 
     [Fact]
     public void HistoryIsNewestFirstCappedAndRoundTrips()
@@ -139,7 +140,17 @@ public class CleaningAndHistoryTests : IDisposable
     }
 
     [Fact]
-    public void RestoreRefusesUntrustedEntries()
+    public void RestoreRefusesAnEntryWithoutIdentity()
+    {
+        var bin = home.Dir("bin");
+        var trashed = home.File(@"bin\$R9.txt");
+        var entry = Entry(Path.Combine(home.Home, @"AppData\Local\Temp\n.txt"), trashed) with { FileId = null };
+        Assert.Equal("sem identidade do item na Lixeira", Restorer.Restore(Record(DateTimeOffset.Now, entry), Context(bin)).Failed.Single().Reason);
+        Assert.True(File.Exists(trashed));
+    }
+
+    [Fact]
+    public void restorerefusesuntrustedentries()
     {
         var bin = home.Dir("bin");
         var trashed = home.File(@"bin\$R1.txt");

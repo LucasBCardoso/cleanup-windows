@@ -71,7 +71,7 @@ public sealed class FakeRemover : IFileRemover
         }).ToList();
 
     public void Delete(string path) => Deleted.Add(path);
-    public void EmptyRecycleBin() => Emptied = true;
+    public void EmptyRecycleBin(long expectedBytes, long expectedItems) => Emptied = true;
 }
 
 public static class Items

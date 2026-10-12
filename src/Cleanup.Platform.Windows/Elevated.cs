@@ -39,13 +39,29 @@ public static class ElevatedRunner
         {
             return new Outcome(true, []);
         }
+        catch (Win32Exception e) // blocked by policy, antivirus, SmartScreen…: nothing ran, reported like any other error
+        {
+            return new Outcome(false, [], $"não foi possível pedir permissão de administrador: {e.Message}");
+        }
         if (helper is null) return new Outcome(false, [], "o auxiliar não iniciou");
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
         timeout.CancelAfter(Timeout);
         try
         {
-            await pipe.WaitForConnectionAsync(timeout.Token);
+            // A helper that dies before connecting must not leave the app waiting 15 minutes.
+            var connect = pipe.WaitForConnectionAsync(timeout.Token);
+            var exited = helper.WaitForExitAsync(timeout.Token);
+            if (await Task.WhenAny(connect, exited) != connect)
+            {
+                await exited;
+                return new Outcome(false, [], $"o auxiliar fechou sem responder (código {helper.ExitCode})");
+            }
+            await connect;
+            // The other end must be the helper we started: a same-user process that grabbed the pipe first could
+            // otherwise read the request and answer "done" for steps that never ran.
+            if (!Native.GetNamedPipeClientProcessId(pipe.SafePipeHandle.DangerousGetHandle(), out var clientId) || clientId != helper.Id)
+                return new Outcome(false, [], "outro processo se conectou no lugar do auxiliar; nada foi feito");
             using var writer = new StreamWriter(pipe, leaveOpen: true) { AutoFlush = true };
             using var reader = new StreamReader(pipe, leaveOpen: true);
             await writer.WriteLineAsync(JsonSerializer.Serialize(new Elevation.Request(steps), Elevation.Json));

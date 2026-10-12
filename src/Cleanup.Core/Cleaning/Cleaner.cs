@@ -25,8 +25,11 @@ public interface IFileRemover
     /// <summary>Deletes permanently. A link (junction, symlink) is removed as a link, never followed.</summary>
     void Delete(string path);
 
-    /// <summary>Empties the Recycle Bin of every drive.</summary>
-    void EmptyRecycleBin();
+    /// <summary>
+    /// Empties the Recycle Bin of every drive, only if it still holds what the scan measured (bytes and item count);
+    /// otherwise throws, so nothing put there after the scan is destroyed.
+    /// </summary>
+    void EmptyRecycleBin(long expectedBytes, long expectedItems);
 }
 
 public sealed record CleanFailure(ScanItem Item, string Reason);
@@ -62,6 +65,18 @@ public sealed class Cleaner(SafetyPolicy policy, IFileRemover remover, RemovalMo
                 allowed.Add(item);
         }
 
+        // The Recycle Bin is emptied BEFORE anything is moved there, so a clean never destroys what it recycles.
+        if (emptyBin)
+        {
+            var bin = items.First(i => i.Kind == ItemKind.RecycleBin);
+            if (mode == RemovalMode.DryRun) removed.Add(bin);
+            else
+            {
+                try { remover.EmptyRecycleBin(bin.Size, bin.ItemCount ?? 0); removed.Add(bin); }
+                catch (Exception e) { failed.Add(new(bin, Describe(e))); }
+            }
+        }
+
         var locations = new Dictionary<string, string>();
         var unique = Deduplicated(allowed);
         switch (mode)
@@ -91,16 +106,6 @@ public sealed class Cleaner(SafetyPolicy policy, IFileRemover remover, RemovalMo
                 break;
         }
 
-        if (emptyBin)
-        {
-            var bin = items.First(i => i.Kind == ItemKind.RecycleBin);
-            if (mode == RemovalMode.DryRun) removed.Add(bin);
-            else
-            {
-                try { remover.EmptyRecycleBin(); removed.Add(bin); }
-                catch (Exception e) { failed.Add(new(bin, Describe(e))); }
-            }
-        }
         return new CleanResult(mode, removed, failed, locations);
     }
 

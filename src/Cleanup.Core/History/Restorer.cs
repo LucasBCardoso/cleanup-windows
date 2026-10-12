@@ -102,7 +102,9 @@ public static class Restorer
         if (parent is null || !Directory.Exists(parent)) return new State.Gone();
         if (!context.IsOwnRecycleBinFolder(parent)) return new State.Blocked("não é um item da Lixeira");
         if (context.FileId(trashPath) is not { } currentId) return new State.Gone();
-        if (entry.FileId is { } expected && expected != currentId) return new State.Blocked("o item na Lixeira mudou");
+        // No recorded identity (history file edited, or it couldn't be read at the time): never trust a name alone.
+        if (entry.FileId is not { } expected) return new State.Blocked("sem identidade do item na Lixeira");
+        if (expected != currentId) return new State.Blocked("o item na Lixeira mudou");
         if (File.Exists(entry.OriginalPath) || Directory.Exists(entry.OriginalPath))
             return new State.Blocked("já existe um item com esse nome no lugar original");
         return new State.Restorable();

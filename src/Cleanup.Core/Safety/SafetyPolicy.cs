@@ -70,6 +70,9 @@ public sealed partial class SafetyPolicy
     public SafetyVerdict Verdict(string path)
     {
         if (string.IsNullOrWhiteSpace(path) || !Path.IsPathFullyQualified(path)) return new SafetyVerdict.Denied("caminho relativo");
+        // Win32 strips a trailing dot or space, so "Tese.docx " would act on "Tese.docx" — a different file.
+        if (path.TrimEnd('\\', '/').Split('\\', '/').Skip(1).Any(c => c.EndsWith('.') || c.EndsWith(' ')))
+            return new SafetyVerdict.Denied("nome terminado em ponto ou espaço");
         string p;
         try { p = PathUtil.Normalize(path); }
         catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)

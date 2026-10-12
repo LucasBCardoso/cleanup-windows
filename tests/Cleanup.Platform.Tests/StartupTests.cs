@@ -95,7 +95,7 @@ public sealed class FakeRemover : IFileRemover
     }).ToList();
 
     public void Delete(string path) => throw new InvalidOperationException("tests never delete");
-    public void EmptyRecycleBin() => throw new InvalidOperationException("tests never empty the Recycle Bin");
+    public void EmptyRecycleBin(long expectedBytes, long expectedItems) => throw new InvalidOperationException("tests never empty the Recycle Bin");
 }
 
 public sealed class StartupInventoryTests : IDisposable

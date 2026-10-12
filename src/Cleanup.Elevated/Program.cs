@@ -72,7 +72,7 @@ namespace Cleanup.Elevated
                 return step.Op switch
                 {
                     Elevation.Ops.Remove => Remove(step.Path),
-                    Elevation.Ops.FlushDns => Exec("ipconfig.exe", ["/flushdns"]),
+                    Elevation.Ops.FlushDns => Exec(System32("ipconfig.exe"), ["/flushdns"]),
                     Elevation.Ops.Run => Maintenance(step.Id),
                     Elevation.Ops.WifiDelete => WiFiDelete(step.Id),
                     _ => new(false, "operação não permitida"),
@@ -88,16 +88,14 @@ namespace Cleanup.Elevated
         {
             if (path is null) return new(false, "sem caminho");
             if (Policy.Reject(path) is { } reason) return new(false, "recusado: " + reason);
-            var attributes = File.GetAttributes(path);
-            if (attributes.HasFlag(FileAttributes.ReadOnly)) File.SetAttributes(path, attributes & ~FileAttributes.ReadOnly);
-            if (attributes.HasFlag(FileAttributes.Directory))
-            {
-                // A junction or directory symlink is removed as a link, never entered.
-                Directory.Delete(path, recursive: !attributes.HasFlag(FileAttributes.ReparsePoint));
-            }
-            else File.Delete(path);
+            // By handle, never by path: these roots are user-writable, so a folder swapped for a junction mid-delete
+            // must be removed as a link, not followed (HandleDelete).
+            Cleanup.Platform.Windows.HandleDelete.Delete(path);
             return new(true, "removido");
         }
+
+        /// <summary>System tools by full path: an elevated process must never pick up an exe from its own or current folder.</summary>
+        private static string System32(string exe) => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), exe);
 
         private static Elevation.StepResult Maintenance(string? id)
         {
@@ -170,7 +168,7 @@ namespace Cleanup.Elevated
 
         private static Elevation.StepResult ResetSearch()
         {
-            var stop = Exec("net.exe", ["stop", "WSearch"]);
+            var stop = Exec(System32("net.exe"), ["stop", "WSearch"]);
             if (!stop.Ok && !stop.Message.Contains("3521", StringComparison.Ordinal)) return stop;
             var data = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
                 @"Microsoft\Search\Data\Applications\Windows");
@@ -178,7 +176,7 @@ namespace Cleanup.Elevated
             {
                 try { File.Delete(file); } catch (IOException) { }
             }
-            return Exec("net.exe", ["start", "WSearch"]);
+            return Exec(System32("net.exe"), ["start", "WSearch"]);
         }
 
         /// <summary>Empties the working sets of all processes and the standby list (what RAMMap's "Empty" does).</summary>

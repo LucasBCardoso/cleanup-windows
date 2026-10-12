@@ -22,6 +22,8 @@ public sealed record ScanItem
     /// <summary>System junk: removed permanently by the elevated helper, never moved to the Recycle Bin.</summary>
     public bool RequiresAdmin { get; init; }
     public ItemKind Kind { get; init; } = ItemKind.Path;
+    /// <summary>For the Recycle Bin item: how many items it held at scan time.</summary>
+    public long? ItemCount { get; init; }
     /// <summary>Shown instead of the path when set (e.g. "Lixeira").</summary>
     public string? DisplayName { get; init; }
 

@@ -316,7 +316,7 @@ public sealed class PrivacyTests : IDisposable
     {
         public IReadOnlyList<RecycleOutcome> Recycle(IReadOnlyList<string> paths) => throw new InvalidOperationException();
         public void Delete(string path) => File.Delete(path);
-        public void EmptyRecycleBin() => throw new InvalidOperationException();
+        public void EmptyRecycleBin(long expectedBytes, long expectedItems) => throw new InvalidOperationException();
     }
 
     private sealed class ThrowingRemover(string locked) : IFileRemover
@@ -328,7 +328,7 @@ public sealed class PrivacyTests : IDisposable
             if (string.Equals(path, locked, StringComparison.OrdinalIgnoreCase)) throw new IOException("locked", unchecked((int)0x80070020));
             Deleted.Add(path);
         }
-        public void EmptyRecycleBin() => throw new InvalidOperationException();
+        public void EmptyRecycleBin(long expectedBytes, long expectedItems) => throw new InvalidOperationException();
     }
 }
 

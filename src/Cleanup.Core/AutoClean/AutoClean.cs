@@ -85,10 +85,13 @@ public sealed record AutoCleanPlan(IReadOnlyList<ScanItem> Items, long TotalByte
 
 public static class AutoCleanPlanner
 {
-    /// <summary>The same items "Limpar agora" takes: safe and needing no administrator (never in the background).</summary>
+    /// <summary>
+    /// The same items "Limpar agora" takes — safe and needing no administrator — except the Recycle Bin: emptying it is
+    /// permanent, so it is never done in the background.
+    /// </summary>
     public static AutoCleanPlan Plan(IEnumerable<ScanReport> reports, long minimumBytes)
     {
-        var groups = reports.Select(r => (r.Title, Items: r.Items.Where(i => i.Risk == RiskLevel.Safe && !i.RequiresAdmin).ToList()))
+        var groups = reports.Select(r => (r.Title, Items: r.Items.Where(i => i.Risk == RiskLevel.Safe && !i.RequiresAdmin && i.Kind != ItemKind.RecycleBin).ToList()))
             .Where(g => g.Items.Count > 0).ToList();
         var items = groups.SelectMany(g => g.Items).ToList();
         var total = items.Sum(i => i.Size);

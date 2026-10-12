@@ -213,18 +213,18 @@ public sealed class WindowsFileRemover : IFileRemover
 
     public void Delete(string path)
     {
-        var attributes = File.GetAttributes(path);
-        if (attributes.HasFlag(FileAttributes.ReadOnly)) File.SetAttributes(path, attributes & ~FileAttributes.ReadOnly);
-        if (attributes.HasFlag(FileAttributes.Directory))
-        {
-            // A junction or directory symlink is removed as a link, never entered.
-            if (attributes.HasFlag(FileAttributes.ReparsePoint)) Directory.Delete(path, recursive: false);
-            else Directory.Delete(path, recursive: true);
-        }
-        else File.Delete(path);
+        // By handle: links are removed as links, never entered, even if swapped in mid-delete.
+        HandleDelete.Delete(path);
     }
 
-    public void EmptyRecycleBin() => RecycleBin.Empty();
+    public void EmptyRecycleBin(long expectedBytes, long expectedItems)
+    {
+        // Only what the scan measured: anything deleted after it (in Explorer, by another app) is not destroyed.
+        var (size, items) = RecycleBin.Query();
+        if (size != expectedBytes || items != expectedItems)
+            throw new IOException("a Lixeira mudou desde a verificação; verifique de novo antes de esvaziá-la");
+        RecycleBin.Empty();
+    }
 }
 
 /// <summary>The Recycle Bin as one Smart Scan item, measured by the shell.</summary>
@@ -241,7 +241,7 @@ public sealed class RecycleBinTask : IScanTask
             ? [new ScanItem
             {
                 Path = "shell:RecycleBinFolder", DisplayName = $"Lixeira ({count} {(count == 1 ? "item" : "itens")})", Size = size,
-                RuleId = Id, Category = Category, Risk = RiskLevel.Safe, Kind = ItemKind.RecycleBin,
+                RuleId = Id, Category = Category, Risk = RiskLevel.Safe, Kind = ItemKind.RecycleBin, ItemCount = count,
             }]
             : [];
         return new ScanReport(Id, Title, Category, items, []);

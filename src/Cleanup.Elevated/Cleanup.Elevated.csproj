@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Cleanup.Core\Cleanup.Core.csproj" />
+    <ProjectReference Include="..\Cleanup.Platform.Windows\Cleanup.Platform.Windows.csproj" />
   </ItemGroup>
 </Project>

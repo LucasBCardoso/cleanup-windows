@@ -82,4 +82,8 @@ internal static partial class Native
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool MoveFileEx(string lpExistingFileName, string lpNewFileName, uint dwFlags);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetNamedPipeClientProcessId(IntPtr pipe, out uint clientProcessId);
 }
