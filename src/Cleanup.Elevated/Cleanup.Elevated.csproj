@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Elevated helper (design §7): named-pipe server with an operation allow-list. Arrives in W6. -->
+  <!-- Elevated helper (design §7): started with runas, talks to the app over a named pipe, allow-listed operations. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(WindowsTarget)</TargetFramework>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Cleanup.Core\Cleanup.Core.csproj" />

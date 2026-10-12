@@ -8,5 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Cleanup.Core\Cleanup.Core.csproj" />
     <ProjectReference Include="..\Cleanup.Platform.Windows\Cleanup.Platform.Windows.csproj" />
+    <!-- Ships Cleanup.Elevated.exe next to cleanup.exe (the UAC helper for system junk). -->
+    <ProjectReference Include="..\Cleanup.Elevated\Cleanup.Elevated.csproj" />
   </ItemGroup>
 </Project>

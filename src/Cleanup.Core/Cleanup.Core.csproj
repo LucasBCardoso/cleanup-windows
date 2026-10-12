@@ -6,4 +6,8 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Cleanup.Core.Tests" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The built-in Smart Scan rules, vendored from the macOS repo. -->
+    <EmbeddedResource Include="..\..\shared\rules\windows.json" LogicalName="Cleanup.Core.rules.windows.json" />
+  </ItemGroup>
 </Project>

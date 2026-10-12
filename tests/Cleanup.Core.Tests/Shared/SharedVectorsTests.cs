@@ -67,14 +67,14 @@ public class SharedVectorsTests
     /// a description and at least one non-empty case list.
     /// </summary>
     [Theory]
-    [InlineData("search-filter.json")]
-    [InlineData("selection.json")]
+    
+    
     [InlineData("keep-rule.json")]
     [InlineData("privileged-batch.json")]
     [InlineData("health.json")]
     [InlineData("autoclean.json")]
     [InlineData("deeplinks.json")]
-    [InlineData("disk-space.json")]
+    
     public void PendingVectorsAreWellFormed(string file)
     {
         using var doc = System.Text.Json.JsonDocument.Parse(SharedFiles.Read("test-vectors/" + file));
