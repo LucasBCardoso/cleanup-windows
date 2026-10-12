@@ -9,14 +9,22 @@ The macOS repo is the reference implementation. Everything here follows its desi
 
 ## Install
 
-```powershell
-./scripts/publish.ps1                         # → artifacts\Cleanup (self-contained) + artifacts\Cleanup-win-x64.zip
-./artifacts/Cleanup/install.ps1 -AddToPath    # → %LOCALAPPDATA%\Programs\Cleanup, Start Menu, `cleanup` in new terminals
-./artifacts/Cleanup/install.ps1 -Uninstall    # keeps your history and settings in %LOCALAPPDATA%\Cleanup
-```
+On any PC, run **`Cleanup-Setup-<versão>.exe`**. Every CI run attaches it as the *Cleanup-Setup* artifact, or you can
+build it yourself (below). It installs for the current user, without an administrator, to
+`%LOCALAPPDATA%\Programs\Cleanup`, and adds:
 
-No administrator is needed to install. The app is unsigned, so SmartScreen may ask once: "Mais informações → Executar
-assim mesmo".
+- a Start Menu shortcut (a Desktop shortcut is optional);
+- an entry in Configurações › Aplicativos to uninstall it;
+- optionally, `cleanup` on the PATH.
+
+Uninstalling keeps the history and settings in `%LOCALAPPDATA%\Cleanup`. The app is unsigned, so SmartScreen may ask
+once: "Mais informações → Executar assim mesmo". Silent install: `Cleanup-Setup-1.0.0.exe /VERYSILENT`.
+
+```powershell
+winget install JRSoftware.InnoSetup           # once, to build the Setup.exe
+./scripts/publish.ps1 -Version 1.0.0          # → artifacts\Cleanup-Setup-1.0.0.exe (+ artifacts\Cleanup folder and zip)
+./artifacts/Cleanup/install.ps1 -AddToPath    # alternative without Setup.exe (same folder; -Uninstall to remove)
+```
 
 ## What's in it
 

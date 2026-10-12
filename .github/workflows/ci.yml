@@ -17,3 +17,12 @@ jobs:
         run: dotnet build Cleanup.sln -c Release
       - name: Test
         run: dotnet test Cleanup.sln -c Release --no-build --logger "console;verbosity=normal"
+      # Self-contained folder, zip and Setup.exe (Inno Setup is preinstalled on GitHub's Windows runners).
+      - name: Publish
+        shell: pwsh
+        run: ./scripts/publish.ps1 -Version "1.0.${{ github.run_number }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cleanup-Setup
+          path: artifacts/Cleanup-Setup-*.exe
+          if-no-files-found: error
