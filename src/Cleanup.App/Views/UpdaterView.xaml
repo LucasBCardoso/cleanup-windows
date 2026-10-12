@@ -1,0 +1,245 @@
+<UserControl
+    x:Class="Cleanup.App.Views.UpdaterView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Cleanup.App.ViewModels"
+    xmlns:updater="using:Cleanup.Core.Updater"
+    xmlns:controls="using:Cleanup.App.Controls">
+    <Grid>
+        <!-- Idle -->
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" MaxWidth="460"
+                    Visibility="{x:Bind Model.IsIdle, Mode=OneWay}">
+            <FontIcon Glyph="&#xE896;" FontSize="48" HorizontalAlignment="Center" Foreground="{ThemeResource AccentBrush}" />
+            <TextBlock Text="Atualizador" Style="{StaticResource ModuleTitleStyle}" HorizontalAlignment="Center" />
+            <TextBlock Text="Veja se há versões novas dos seus apps pelo winget, o gerenciador de pacotes do Windows, e abra as atualizações da Microsoft Store."
+                       Style="{StaticResource BodyTextStyle}" TextAlignment="Center" Foreground="{ThemeResource MuteBrush}" />
+            <Button Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Center" Margin="0,8,0,0" Command="{x:Bind Model.CheckCommand}"
+                    Content="Verificar atualizações" />
+            <controls:BannerView Banner="{x:Bind Model.Banner, Mode=OneWay}" Dismissed="OnBannerDismissed" />
+        </StackPanel>
+
+        <!-- Checking -->
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14" Visibility="{x:Bind Model.IsChecking, Mode=OneWay}">
+            <ProgressRing IsActive="{x:Bind Model.IsChecking, Mode=OneWay}" Width="72" Height="72" HorizontalAlignment="Center" />
+            <TextBlock Text="Verificando atualizações…" Style="{StaticResource ModuleTitleStyle}" HorizontalAlignment="Center" />
+            <TextBlock Text="Consultando o winget. Pode levar um minuto." Style="{StaticResource CaptionTextStyle}" HorizontalAlignment="Center" />
+        </StackPanel>
+
+        <!-- winget missing (some Windows 10 installs) -->
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" MaxWidth="500"
+                    Visibility="{x:Bind Model.IsWingetMissing, Mode=OneWay}">
+            <FontIcon Glyph="&#xE7BA;" FontSize="44" HorizontalAlignment="Center" Foreground="{ThemeResource WarnBrush}" />
+            <TextBlock Text="O winget não está instalado" Style="{StaticResource ModuleTitleStyle}" HorizontalAlignment="Center" />
+            <TextBlock Style="{StaticResource BodyTextStyle}" TextAlignment="Center" Foreground="{ThemeResource MuteBrush}"
+                       Text="O Atualizador usa o winget, o gerenciador de pacotes do Windows. Ele vem no App Instalador, da Microsoft Store: já faz parte do Windows 11 e das versões recentes do Windows 10. Instale ou atualize o App Instalador e verifique de novo." />
+            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" Margin="0,8,0,0">
+                <Button Style="{StaticResource AccentButtonStyle}" Command="{x:Bind Model.GetAppInstallerCommand}" Content="Abrir o App Instalador na Loja" />
+                <Button Style="{StaticResource SubtleButtonStyle}" Command="{x:Bind Model.CheckCommand}" Content="Verificar de novo" />
+            </StackPanel>
+            <Button Style="{StaticResource SubtleButtonStyle}" HorizontalAlignment="Center" Command="{x:Bind Model.OpenStoreCommand}"
+                    Content="Ver atualizações da Microsoft Store" />
+        </StackPanel>
+
+        <!-- Results -->
+        <Grid Visibility="{x:Bind Model.HasResults, Mode=OneWay}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid Padding="24,18,24,12">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="Atualizador" Style="{StaticResource ModuleTitleStyle}" />
+                    <TextBlock Text="{x:Bind Model.Subtitle, Mode=OneWay}" Style="{StaticResource CaptionTextStyle}" />
+                </StackPanel>
+                <Button Style="{StaticResource SubtleButtonStyle}" HorizontalAlignment="Right" VerticalAlignment="Center" Command="{x:Bind Model.CheckCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE72C;" FontSize="12" />
+                        <TextBlock Text="Verificar novamente" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+            <controls:SelectionBar Grid.Row="1" List="{x:Bind Model}" Visibility="{x:Bind Model.HasRows, Mode=OneWay}" />
+
+            <ScrollViewer Grid.Row="2" Padding="14,0,14,8">
+                <StackPanel Spacing="6">
+                    <StackPanel HorizontalAlignment="Center" Spacing="8" Margin="0,40,0,24" Visibility="{x:Bind Hide(Model.HasRows), Mode=OneWay}">
+                        <FontIcon Glyph="&#xE73E;" FontSize="40" Foreground="{ThemeResource OkBrush}" />
+                        <TextBlock Text="Tudo atualizado" Style="{StaticResource ModuleTitleStyle}" HorizontalAlignment="Center" />
+                        <TextBlock Text="Nenhum app tem versão nova no winget agora." Style="{StaticResource BodyTextStyle}" HorizontalAlignment="Center" />
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{x:Bind Model.ShownRowsFlat, Mode=OneWay}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:UpdateRow">
+                                <Border Style="{StaticResource RowCardStyle}">
+                                    <Grid ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}" IsEnabled="{x:Bind CanSelect}" MinWidth="0" Padding="0" VerticalAlignment="Center" />
+                                        <Grid Grid.Column="1" Width="32" Height="32" CornerRadius="8" Background="{ThemeResource SurfaceSoftBrush}" VerticalAlignment="Center">
+                                            <FontIcon Glyph="&#xE896;" FontSize="15" Foreground="{ThemeResource AccentBrush}" Visibility="{x:Bind IsWinget}" />
+                                            <FontIcon Glyph="&#xE719;" FontSize="15" Foreground="{ThemeResource AccentBrush}" Visibility="{x:Bind IsStore}" />
+                                        </Grid>
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                            <TextBlock Text="{x:Bind Name}" Style="{StaticResource RowTitleStyle}" />
+                                            <TextBlock Text="{x:Bind Detail, Mode=OneWay}" Style="{StaticResource CaptionTextStyle}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                            <ProgressRing IsActive="{x:Bind IsInstalling, Mode=OneWay}" Width="16" Height="16" Visibility="{x:Bind IsInstalling, Mode=OneWay}" />
+                                            <FontIcon Glyph="&#xE7BA;" FontSize="14" Foreground="{ThemeResource DangerBrush}" Visibility="{x:Bind HasError, Mode=OneWay}"
+                                                      ToolTipService.ToolTip="{x:Bind Error, Mode=OneWay}" />
+                                            <Border Style="{StaticResource TagStyle}" Background="{ThemeResource SurfaceSoftBrush}" Visibility="{x:Bind IsExplicit}"
+                                                    ToolTipService.ToolTip="O winget só atualiza este pacote quando ele é pedido diretamente">
+                                                <TextBlock Text="manual" FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource BodyBrush}" />
+                                            </Border>
+                                            <Border Style="{StaticResource TagStyle}" Background="{ThemeResource SurfaceSoftBrush}">
+                                                <TextBlock Text="{x:Bind SourceText}" FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource BodyBrush}" />
+                                            </Border>
+                                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                                <TextBlock Text="{x:Bind CurrentVersion}" Style="{StaticResource NumberTextStyle}" />
+                                                <FontIcon Glyph="&#xE72A;" FontSize="9" Foreground="{ThemeResource MuteBrush}" />
+                                                <TextBlock Text="{x:Bind NewVersion}" Style="{StaticResource NumberTextStyle}" Foreground="{ThemeResource OkBrush}" FontWeight="SemiBold" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <Button Grid.Column="4" Background="Transparent" BorderThickness="0" Padding="6" VerticalAlignment="Center">
+                                            <FontIcon Glyph="&#xE712;" FontSize="13" />
+                                            <Button.Flyout>
+                                                <MenuFlyout>
+                                                    <MenuFlyoutItem Text="Ignorar esta versão" Click="OnIgnoreVersion" Tag="{x:Bind}">
+                                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8F8;" /></MenuFlyoutItem.Icon>
+                                                    </MenuFlyoutItem>
+                                                    <MenuFlyoutItem Text="Ignorar este app" Click="OnIgnoreApp" Tag="{x:Bind}">
+                                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xED1A;" /></MenuFlyoutItem.Icon>
+                                                    </MenuFlyoutItem>
+                                                </MenuFlyout>
+                                            </Button.Flyout>
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Microsoft Store: its apps update through the Store itself. -->
+                    <Border Style="{StaticResource RowCardStyle}" Margin="0,10,0,0">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid Width="32" Height="32" CornerRadius="8" Background="{ThemeResource SurfaceSoftBrush}" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE719;" FontSize="15" Foreground="{ThemeResource AccentBrush}" />
+                            </Grid>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="Apps da Microsoft Store" Style="{StaticResource RowTitleStyle}" />
+                                <TextBlock Text="A Loja atualiza os próprios apps. Abra Downloads e atualizações para ver e instalar." Style="{StaticResource CaptionTextStyle}" />
+                            </StackPanel>
+                            <Button Grid.Column="2" Style="{StaticResource SubtleButtonStyle}" Command="{x:Bind Model.OpenStoreCommand}" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon Glyph="&#xE8A7;" FontSize="12" />
+                                    <TextBlock Text="Abrir a Microsoft Store" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- Não verificados -->
+                    <StackPanel Spacing="6" Visibility="{x:Bind Model.HasFailures, Mode=OneWay}">
+                        <TextBlock Text="NÃO VERIFICADOS" Style="{StaticResource SectionLabelStyle}" Margin="4,10,0,0" />
+                        <ItemsControl ItemsSource="{x:Bind Model.Failures, Mode=OneWay}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="updater:UpdateFailure">
+                                    <Border Style="{StaticResource RowCardStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <FontIcon Glyph="&#xE7BA;" FontSize="16" Foreground="{ThemeResource DangerBrush}" VerticalAlignment="Center" />
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="{x:Bind AppName}" Style="{StaticResource RowTitleStyle}" />
+                                                <TextBlock Text="{x:Bind Message}" Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- Ignorados -->
+                    <StackPanel Spacing="6" Visibility="{x:Bind Model.HasIgnored, Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="10" Margin="4,10,0,0">
+                            <TextBlock Text="IGNORADOS" Style="{StaticResource SectionLabelStyle}" VerticalAlignment="Center" />
+                            <TextBlock Text="{x:Bind Count(Model.IgnoredEntries.Count), Mode=OneWay}" Style="{StaticResource SectionLabelStyle}" VerticalAlignment="Center" />
+                            <HyperlinkButton Content="{x:Bind Model.ShowIgnoredText, Mode=OneWay}" Command="{x:Bind Model.ToggleIgnoredCommand}" Padding="4,0"
+                                             FontSize="12" Foreground="{ThemeResource AccentInkBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{x:Bind Model.IgnoredEntries, Mode=OneWay}" Visibility="{x:Bind Model.ShowIgnored, Mode=OneWay}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:IgnoredRow">
+                                    <Border Style="{StaticResource RowCardStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <FontIcon Glyph="&#xED1A;" FontSize="15" Foreground="{ThemeResource MuteBrush}" VerticalAlignment="Center" />
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="{x:Bind AppId}" Style="{StaticResource RowTitleStyle}" />
+                                                <TextBlock Text="{x:Bind VersionText}" Style="{StaticResource CaptionTextStyle}" />
+                                            </StackPanel>
+                                            <Button Grid.Column="2" Style="{StaticResource SubtleButtonStyle}" Content="Deixar de ignorar" Click="OnUnignore" Tag="{x:Bind}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Footer -->
+            <Border Grid.Row="3" BorderBrush="{ThemeResource HairlineBrush}" BorderThickness="0,1,0,0" Background="{ThemeResource SurfaceBrush}" Padding="24,12">
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="SELECIONADOS" Style="{StaticResource SectionLabelStyle}" />
+                        <TextBlock Text="{x:Bind Count(Model.SelectedCount), Mode=OneWay}" Style="{StaticResource DisplayTextStyle}" FontSize="22" />
+                    </StackPanel>
+                    <controls:BannerView Grid.Column="1" VerticalAlignment="Center" Banner="{x:Bind Model.Banner, Mode=OneWay}" Dismissed="OnBannerDismissed" />
+                    <Button Grid.Column="2" Style="{StaticResource AccentButtonStyle}" Command="{x:Bind Model.InstallCommand}" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ProgressRing IsActive="{x:Bind Model.IsInstalling, Mode=OneWay}" Width="16" Height="16" Foreground="{ThemeResource OnAccentBrush}"
+                                          Visibility="{x:Bind Model.IsInstalling, Mode=OneWay}" />
+                            <FontIcon Glyph="&#xE896;" FontSize="14" Visibility="{x:Bind Hide(Model.IsInstalling), Mode=OneWay}" />
+                            <TextBlock Text="Atualizar" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

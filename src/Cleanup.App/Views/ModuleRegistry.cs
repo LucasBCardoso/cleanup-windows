@@ -12,6 +12,8 @@ public static class ModuleRegistry
     public static UIElement? Create(Module module) => module switch
     {
         Module.Privacy => new PrivacyView(),
+        Module.Updater => new UpdaterView(),
+        Module.Extensions => new ExtensionsView(),
         _ => null,
     };
 }

@@ -108,7 +108,7 @@ public abstract partial class SelectableList : ObservableObject
 
     public List<ScanItem> SelectedItems() => AllRows.Where(r => r.IsSelected).Select(r => r.Item).ToList();
 
-    public void ToggleAll()
+    public virtual void ToggleAll()
     {
         var shown = ShownRows.Where(r => r.IsEnabled).ToList();
         var ids = shown.Select(r => r.Id).ToList();
