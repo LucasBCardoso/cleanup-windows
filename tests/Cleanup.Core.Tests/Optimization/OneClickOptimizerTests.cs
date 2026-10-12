@@ -48,7 +48,7 @@ public sealed class OneClickOptimizerTests : IDisposable
         Assert.Equal([admin], plan.Admin);
         Assert.Equal(["bad"], plan.BrokenStartup.Select(s => s.Name));
         Assert.Equal(["free-ram", "flush-dns"], plan.AdminTasks.Select(x => x.Id)); // only the quick, harmless ones
-        Assert.Equal(["clear-thumbnails"], plan.UserTasks.Select(x => x.Id));
+        Assert.Empty(plan.UserTasks); // the thumbnail cache restarts Explorer: Manutenção only
         Assert.True(plan.NeedsAdmin);
     }
 

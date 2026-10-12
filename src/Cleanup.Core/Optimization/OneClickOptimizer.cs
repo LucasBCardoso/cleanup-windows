@@ -48,10 +48,10 @@ public sealed record OptimizationReport(CleanResult Clean, AdminCleanResult Admi
 public static class OneClickOptimizer
 {
     /// <summary>
-    /// Quick and harmless: free memory, flush DNS, clear the thumbnail cache. Slow or disruptive tasks (search index,
-    /// DISM, sfc, Storage Sense) stay manual in Manutenção.
+    /// Quick and harmless: free memory and flush DNS. Slow or disruptive tasks (the thumbnail cache restarts Explorer,
+    /// search index, DISM, sfc, Storage Sense) stay manual in Manutenção.
     /// </summary>
-    public static readonly IReadOnlyList<string> TaskIds = [MaintenanceTask.FreeRam, MaintenanceTask.FlushDns, MaintenanceTask.ClearThumbnails];
+    public static readonly IReadOnlyList<string> TaskIds = [MaintenanceTask.FreeRam, MaintenanceTask.FlushDns];
 
     /// <param name="isUnverifiableDrive">True for a path on a removable or network drive, or a drive letter that isn't there.</param>
     public static OptimizationPlan Plan(IEnumerable<ScanItem> items, ScanEnvironment environment, IEnumerable<StartupItem> startupItems,
