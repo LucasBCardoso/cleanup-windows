@@ -14,6 +14,8 @@ public static class ModuleRegistry
         Module.Privacy => new PrivacyView(),
         Module.Updater => new UpdaterView(),
         Module.Extensions => new ExtensionsView(),
+        Module.Optimization => new OptimizationView(),
+        Module.Maintenance => new MaintenanceView(),
         _ => null,
     };
 }
