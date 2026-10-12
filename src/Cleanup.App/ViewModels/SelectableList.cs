@@ -6,8 +6,8 @@ using Cleanup.Core.Rules;
 
 namespace Cleanup.App.ViewModels;
 
-/// <summary>One row in a list of removable items.</summary>
-public sealed partial class ItemRow : ObservableObject
+/// <summary>One row in a list of removable items. Modules may derive their own rows (e.g. Privacidade).</summary>
+public partial class ItemRow : ObservableObject
 {
     public ScanItem Item { get; }
     private readonly Action onSelectionChanged;
@@ -31,13 +31,17 @@ public sealed partial class ItemRow : ObservableObject
     public bool IsAdmin => Item.RequiresAdmin;
     public string LastUsedText => Item.LastAccessedUtc is { } d ? "usado em " + d.ToLocalTime().ToString("dd/MM/yyyy") : "";
     public bool CanReveal => Item.Kind == ItemKind.Path;
+    /// <summary>False for a row shown but not selectable now (e.g. its app is running); "Selecionar tudo" skips it.</summary>
+    public virtual bool IsEnabled => true;
 }
 
 /// <summary>A titled group of rows (one per scan task).</summary>
 public sealed class ItemGroup(string title, IEnumerable<ItemRow> rows) : ObservableCollection<ItemRow>(rows)
 {
     public string Title { get; } = title;
-    public string SizeText => ByteFormat.Format(this.Sum(r => r.Item.Size));
+    /// <summary>Shown instead of the size when set (e.g. a count for a group of items without a size).</summary>
+    public string? Trailing { get; init; }
+    public string SizeText => Trailing ?? ByteFormat.Format(this.Sum(r => r.Item.Size));
 }
 
 /// <summary>
@@ -66,12 +70,18 @@ public abstract partial class SelectableList : ObservableObject
 
     partial void OnQueryChanged(string value) => Refilter();
 
-    protected void SetGroups(IEnumerable<(string Title, IEnumerable<ScanItem> Items)> groups, Func<ScanItem, bool> preselect)
+    protected void SetGroups(IEnumerable<(string Title, IEnumerable<ScanItem> Items)> groups, Func<ScanItem, bool> preselect) =>
+        SetRows(groups.Select(g => (g.Title, g.Items.Select(i => new ItemRow(i, preselect(i), UpdateSelection)))));
+
+    /// <summary>Groups of rows built by the module (rows must call <see cref="UpdateSelection"/> when toggled).</summary>
+    protected void SetRows(IEnumerable<(string Title, IEnumerable<ItemRow> Rows)> groups)
     {
-        AllGroups = groups.Select(g => (g.Title, g.Items.Select(i => new ItemRow(i, preselect(i), UpdateSelection)).ToList()))
-            .Where(g => g.Item2.Count > 0).ToList();
+        AllGroups = groups.Select(g => (g.Title, g.Rows.ToList())).Where(g => g.Item2.Count > 0).ToList();
         Refilter();
     }
+
+    /// <summary>Text shown instead of a group's size; null shows the size.</summary>
+    protected virtual string? GroupTrailing(string title, IReadOnlyList<ItemRow> rows) => null;
 
     /// <summary>Drops removed items without rescanning (keeps the user's selection).</summary>
     protected void Drop(IReadOnlySet<string> ids)
@@ -86,7 +96,7 @@ public abstract partial class SelectableList : ObservableObject
         foreach (var (title, rows) in AllGroups)
         {
             var shown = rows.Where(r => SearchFilter.Matches(Query, [r.Name, r.Item.Path, title])).ToList();
-            if (shown.Count > 0) Groups.Add(new ItemGroup(title, shown));
+            if (shown.Count > 0) Groups.Add(new ItemGroup(title, shown) { Trailing = GroupTrailing(title, shown) });
         }
         UpdateSelection();
         OnPropertyChanged(nameof(TotalSize));
@@ -100,7 +110,7 @@ public abstract partial class SelectableList : ObservableObject
 
     public void ToggleAll()
     {
-        var shown = ShownRows.ToList();
+        var shown = ShownRows.Where(r => r.IsEnabled).ToList();
         var ids = shown.Select(r => r.Id).ToList();
         var selected = AllRows.Where(r => r.IsSelected).Select(r => r.Id).ToHashSet();
         var target = Selection.Toggled(selected, ids);
@@ -110,7 +120,7 @@ public abstract partial class SelectableList : ObservableObject
     protected virtual void UpdateSelection()
     {
         var all = AllRows.ToList();
-        var shownIds = ShownRows.Select(r => r.Id).ToList();
+        var shownIds = ShownRows.Where(r => r.IsEnabled).Select(r => r.Id).ToList();
         var selectedIds = all.Where(r => r.IsSelected).Select(r => r.Id).ToHashSet();
         var state = Selection.State(selectedIds, shownIds);
         var shownSelected = shownIds.Count(selectedIds.Contains);

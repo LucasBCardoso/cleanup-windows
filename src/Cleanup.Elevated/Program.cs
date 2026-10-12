@@ -74,6 +74,7 @@ namespace Cleanup.Elevated
                     Elevation.Ops.Remove => Remove(step.Path),
                     Elevation.Ops.FlushDns => Exec("ipconfig.exe", ["/flushdns"]),
                     Elevation.Ops.Run => Maintenance(step.Id),
+                    Elevation.Ops.WifiDelete => WiFiDelete(step.Id),
                     _ => new(false, "operação não permitida"),
                 };
             }
@@ -124,6 +125,47 @@ namespace Cleanup.Elevated
             var text = (output.Result + error.Result).Trim();
             if (text.Length > 2000) text = text[^2000..];
             return new(process.ExitCode == 0, process.ExitCode == 0 ? text : $"código {process.ExitCode}: {text}");
+        }
+
+        /// <summary>
+        /// Forgets one saved Wi-Fi network. The name is re-validated here, must be a saved profile right now, and is
+        /// refused when it's the network in use (read again as administrator, not trusted from the app). It reaches
+        /// netsh as a single argument; no shell is involved.
+        /// </summary>
+        private static Elevation.StepResult WiFiDelete(string? name)
+        {
+            if (name is null) return new(false, "sem nome");
+            if (Cleanup.Core.Privacy.WiFiNetworks.Refusal(name) is { } reason) return new(false, "recusado: " + reason);
+            var (_, interfaces) = Netsh(Cleanup.Core.Privacy.WiFiNetworks.ShowInterfacesArguments);
+            if (Cleanup.Core.Privacy.WiFiNetworks.Connected(interfaces).Contains(name))
+                return new(false, Cleanup.Core.Privacy.WiFiNetworks.InUseMessage);
+            var (listed, profiles) = Netsh(Cleanup.Core.Privacy.WiFiNetworks.ShowProfilesArguments);
+            if (listed != 0 || !Cleanup.Core.Privacy.WiFiNetworks.Profiles(profiles).Contains(name, StringComparer.Ordinal))
+                return new(false, "rede não encontrada");
+            var (code, output) = Netsh(Cleanup.Core.Privacy.WiFiNetworks.DeleteArguments(name));
+            output = output.Trim();
+            return code == 0 ? new(true, output) : new(false, $"código {code}: {output}");
+        }
+
+        private static (int Code, string Output) Netsh(IReadOnlyList<string> arguments)
+        {
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+            var start = new ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "netsh.exe"))
+            {
+                UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true,
+            };
+            foreach (var argument in arguments) start.ArgumentList.Add(argument);
+            using var process = Process.Start(start)!;
+            using var buffer = new MemoryStream();
+            var copy = process.StandardOutput.BaseStream.CopyToAsync(buffer);
+            var error = process.StandardError.ReadToEndAsync();
+            process.WaitForExit();
+            copy.Wait();
+            _ = error.Result;
+            System.Text.Encoding oem;
+            try { oem = System.Text.Encoding.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.OEMCodePage); }
+            catch (Exception e) when (e is ArgumentException or NotSupportedException) { oem = System.Text.Encoding.Latin1; }
+            return (process.ExitCode, Cleanup.Core.Privacy.WiFiNetworks.Decode(buffer.ToArray(), oem));
         }
 
         private static Elevation.StepResult ResetSearch()
