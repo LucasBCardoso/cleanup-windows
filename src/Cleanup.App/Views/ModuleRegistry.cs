@@ -11,6 +11,8 @@ public static class ModuleRegistry
 {
     public static UIElement? Create(Module module) => module switch
     {
+        Module.Optimization => new OptimizationView(),
+        Module.Maintenance => new MaintenanceView(),
         _ => null,
     };
 }
