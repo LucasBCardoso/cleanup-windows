@@ -166,7 +166,7 @@
                                 <TextBlock Text="{x:Bind views:DeveloperView.Detail(Id)}" Style="{StaticResource CaptionTextStyle}" />
                             </StackPanel>
                             <TextBlock Grid.Column="3" Text="{x:Bind SizeText}" Style="{StaticResource NumberTextStyle}" VerticalAlignment="Center" />
-                            <Button Grid.Column="4" Background="Transparent" BorderThickness="0" Padding="6" VerticalAlignment="Center">
+                            <Button Grid.Column="4" Background="Transparent" BorderThickness="0" Padding="6" AutomationProperties.Name="Mais opções" VerticalAlignment="Center">
                                 <FontIcon Glyph="&#xE712;" FontSize="13" />
                                 <Button.Flyout>
                                     <MenuFlyout>
@@ -226,7 +226,7 @@
                                 <TextBlock Text="Revisar" FontSize="11.5" FontWeight="SemiBold" Foreground="{ThemeResource InkBrush}" />
                             </Border>
                             <TextBlock Grid.Column="3" Text="{x:Bind SizeText}" Style="{StaticResource NumberTextStyle}" VerticalAlignment="Center" />
-                            <Button Grid.Column="4" Background="Transparent" BorderThickness="0" Padding="6" VerticalAlignment="Center">
+                            <Button Grid.Column="4" Background="Transparent" BorderThickness="0" Padding="6" AutomationProperties.Name="Mais opções" VerticalAlignment="Center">
                                 <FontIcon Glyph="&#xE712;" FontSize="13" />
                                 <Button.Flyout>
                                     <MenuFlyout>
@@ -313,7 +313,7 @@
                                         <TextBlock Text="{x:Bind Subtitle}" Style="{StaticResource CaptionTextStyle}" />
                                     </StackPanel>
                                     <TextBlock Grid.Column="2" Text="{x:Bind Value}" Style="{StaticResource NumberTextStyle}" VerticalAlignment="Center" />
-                                    <Button Grid.Column="3" Background="Transparent" BorderThickness="0" Padding="6" VerticalAlignment="Center" Click="OnRevealTool"
+                                    <Button Grid.Column="3" Background="Transparent" BorderThickness="0" Padding="6" AutomationProperties.Name="Mais opções" VerticalAlignment="Center" Click="OnRevealTool"
                                             Tag="{x:Bind}" ToolTipService.ToolTip="Mostrar no Explorador">
                                         <FontIcon Glyph="&#xE838;" FontSize="13" />
                                     </Button>

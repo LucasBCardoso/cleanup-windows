@@ -46,7 +46,8 @@ public sealed class LargeOldFilesTask(long minimumSize = LargeOldFilesTask.Defau
         var options = new EnumerationOptions
         {
             RecurseSubdirectories = true, IgnoreInaccessible = true, ReturnSpecialDirectories = false,
-            AttributesToSkip = FileAttributes.ReparsePoint | FileAttributes.System,
+            // Not ReparsePoint: OneDrive marks every synced file and folder with one. Links are excluded below.
+            AttributesToSkip = FileAttributes.System,
         };
         var minimum = minimumSize;
         var files = new FileSystemEnumerable<(string Path, long Length, DateTime Write, DateTime Access)>(root,
@@ -57,7 +58,8 @@ public sealed class LargeOldFilesTask(long minimumSize = LargeOldFilesTask.Defau
             ShouldRecursePredicate = (ref FileSystemEntry e) =>
                 !(e.Directory.Length == home.Length && SkippedHomeDirectories.Contains(e.FileName.ToString())
                   && string.Equals(e.Directory.ToString(), home, StringComparison.OrdinalIgnoreCase))
-                && !e.FileName.StartsWith("."),
+                && !e.FileName.StartsWith(".")
+                && ((e.Attributes & FileAttributes.ReparsePoint) == 0 || !FileMetrics.IsLink(e.ToFullPath(), e.Attributes)),
         };
         var count = 0;
         try

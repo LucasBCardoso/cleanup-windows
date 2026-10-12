@@ -111,7 +111,7 @@
                                                 <TextBlock Text="{x:Bind NewVersion}" Style="{StaticResource NumberTextStyle}" Foreground="{ThemeResource OkBrush}" FontWeight="SemiBold" />
                                             </StackPanel>
                                         </StackPanel>
-                                        <Button Grid.Column="4" Background="Transparent" BorderThickness="0" Padding="6" VerticalAlignment="Center">
+                                        <Button Grid.Column="4" Background="Transparent" BorderThickness="0" Padding="6" AutomationProperties.Name="Mais opções" VerticalAlignment="Center">
                                             <FontIcon Glyph="&#xE712;" FontSize="13" />
                                             <Button.Flyout>
                                                 <MenuFlyout>

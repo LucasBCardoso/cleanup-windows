@@ -99,7 +99,7 @@
                             </StackPanel>
                             <TextBlock Grid.Column="2" Text="{x:Bind LastUsedText}" Style="{StaticResource CaptionTextStyle}" VerticalAlignment="Center" />
                             <TextBlock Grid.Column="3" Text="{x:Bind SizeText}" Style="{StaticResource NumberTextStyle}" VerticalAlignment="Center" />
-                            <Button Grid.Column="4" Background="Transparent" BorderThickness="0" Padding="6" VerticalAlignment="Center">
+                            <Button Grid.Column="4" Background="Transparent" BorderThickness="0" Padding="6" AutomationProperties.Name="Mais opções" VerticalAlignment="Center">
                                 <FontIcon Glyph="&#xE712;" FontSize="13" />
                                 <Button.Flyout>
                                     <MenuFlyout>

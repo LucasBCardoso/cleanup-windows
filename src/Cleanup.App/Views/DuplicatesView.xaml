@@ -193,7 +193,7 @@
                                 <TextBlock Text="Fica" FontSize="11.5" FontWeight="SemiBold" Foreground="{ThemeResource AccentInkBrush}" />
                             </Border>
                             <TextBlock Grid.Column="3" Text="{x:Bind views:DuplicatesView.DateText(Item.LastWriteUtc)}" Style="{StaticResource CaptionTextStyle}" VerticalAlignment="Center" />
-                            <Button Grid.Column="4" Background="Transparent" BorderThickness="0" Padding="6" VerticalAlignment="Center"
+                            <Button Grid.Column="4" Background="Transparent" BorderThickness="0" Padding="6" AutomationProperties.Name="Mais opções" VerticalAlignment="Center"
                                     Click="OnReveal" Tag="{x:Bind}" ToolTipService.ToolTip="Mostrar no Explorador">
                                 <FontIcon Glyph="&#xE838;" FontSize="13" />
                             </Button>

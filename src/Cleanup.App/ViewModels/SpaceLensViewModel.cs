@@ -12,7 +12,9 @@ public sealed class LensRow(DirectoryEntry entry, long max)
 {
     public DirectoryEntry Entry { get; } = entry;
     public string Name => Entry.Name;
-    public string SizeText => Entry.IsLink ? "link" : ByteFormat.Format(Entry.Size);
+    public string SizeText => Entry.IsLink ? "link" : (Entry.IsPartial ? "≥ " : "") + ByteFormat.Format(Entry.Size);
+    /// <summary>Why a size is a lower bound (shown as a tooltip).</summary>
+    public string? SizeNote => Entry.IsLink ? "Atalho para outra pasta: não é seguido nem contado." : Entry.IsPartial ? "Parte desta pasta só pode ser lida como administrador; o tamanho real é maior." : null;
     public double Fraction => max <= 0 ? 0 : Math.Max(0.004, (double)Entry.Size / max);
     public string Glyph => Entry.IsLink ? "\uE71B" : Entry.IsDirectory ? "\uE8B7" : "\uE8A5";
     public bool CanOpen => Entry.IsDirectory;
@@ -40,8 +42,11 @@ public sealed partial class SpaceLensViewModel : ObservableObject
 
     [ObservableProperty] private string currentPath = "";
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(UpCommand))] private bool isMeasuring;
-    [ObservableProperty] private int measuredCount;
-    [ObservableProperty] private int childCount;
+    [ObservableProperty] private long filesSeen;
+    private SpaceTree? tree;
+
+    /// <summary>Raised once a folder's rows are listed (the view scrolls back to the top).</summary>
+    public event Action? Listed;
     [ObservableProperty] private string totalText = "";
     [ObservableProperty] private DriveRow? selectedDrive;
     [ObservableProperty] private Banner? banner;
@@ -84,20 +89,32 @@ public sealed partial class SpaceLensViewModel : ObservableObject
         Rows.Clear();
         Banner = null;
         IsMeasuring = true;
-        MeasuredCount = 0;
+
         try
         {
-            ChildCount = await Task.Run(() =>
+            // One walk measures every folder below; opening a subfolder afterwards needs no new walk. Going up reuses
+            // what was already measured below.
+            if (tree is null || !tree.Covers(path))
             {
-                try { return Directory.EnumerateFileSystemEntries(path).Count(); }
-                catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return 0; }
-            });
-            var progress = new Progress<int>(n => { if (!cts.IsCancellationRequested) MeasuredCount = n; });
-            var entries = await Task.Run(() => DirectorySizer.ChildrenAsync(path, progress: progress, cancellation: cts.Token));
+                var progress = new Progress<long>(n => { if (!cts.IsCancellationRequested) FilesSeen = n; });
+                FilesSeen = 0;
+                tree = await SpaceTree.BuildAsync(path, reuse: tree, filesSeen: progress, cancellation: cts.Token);
+            }
+            var current = tree;
+            var entries = await Task.Run(() => current.Children(path), cts.Token);
             if (cts.IsCancellationRequested) return;
             var max = entries.FirstOrDefault()?.Size ?? 0;
             foreach (var e in entries) Rows.Add(new LensRow(e, max));
-            TotalText = $"{ByteFormat.Format(entries.Sum(e => e.Size))} em {entries.Count} {(entries.Count == 1 ? "item" : "itens")}";
+            Listed?.Invoke();
+            var measured = entries.Sum(e => e.Size);
+            TotalText = $"{ByteFormat.Format(measured)} em {entries.Count} {(entries.Count == 1 ? "item" : "itens")}";
+            // At a drive root, say how much of the used space no folder accounts for (what needs administrator to read,
+            // NTFS metadata, shadow copies), instead of letting the list look complete.
+            if (string.Equals(Path.GetPathRoot(path), path, StringComparison.OrdinalIgnoreCase) && DiskSpace.Of(path) is { } disk
+                && disk.Used - measured > disk.Total / 200)
+            {
+                TotalText += $" · {ByteFormat.Format(disk.Used - measured)} sem identificar (só o administrador lê)";
+            }
         }
         catch (OperationCanceledException) { }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
@@ -128,6 +145,7 @@ public sealed partial class SpaceLensViewModel : ObservableObject
     private Task RefreshAsync()
     {
         var path = CurrentPath;
+        tree = null; // measure again from scratch
         var drive = SelectedDrive?.Root;
         loadingDrives = true;
         Drives.Clear();

@@ -18,6 +18,8 @@ public sealed partial class SpaceLensView : UserControl
     public SpaceLensView()
     {
         InitializeComponent();
+        // A new folder starts at the top: the list would otherwise keep the old scroll offset (and look empty).
+        Model.Listed += () => { if (List.Items.Count > 0) List.ScrollIntoView(List.Items[0]); };
         Model.Crumbs.CollectionChanged += (_, _) =>
         {
             CrumbNames.Clear();
@@ -36,8 +38,8 @@ public sealed partial class SpaceLensView : UserControl
     public double DriveUsed(DriveRow? drive) => drive?.UsedFraction ?? 0;
     public Visibility HasBanner(Banner? banner) => banner is null ? Visibility.Collapsed : Visibility.Visible;
 
-    public string Status(bool measuring, int measured, int total, string totalText) =>
-        measuring ? $"Medindo {measured} de {total}…" : totalText;
+    public string Status(bool measuring, long files, string totalText) =>
+        measuring ? (files > 0 ? $"Medindo… {files:N0} arquivos" : "Medindo…") : totalText;
 
     private void OnBannerDismissed(object? sender, EventArgs e) => Model.Banner = null;
 

@@ -43,7 +43,7 @@
                         <TextBlock Text="Histórico" />
                     </StackPanel>
                 </Button>
-                <Button Style="{StaticResource SubtleButtonStyle}" Click="OnSettings" ToolTipService.ToolTip="Ajustes">
+                <Button Style="{StaticResource SubtleButtonStyle}" Click="OnSettings" ToolTipService.ToolTip="Ajustes" AutomationProperties.Name="Ajustes">
                     <FontIcon Glyph="&#xE713;" FontSize="13" />
                 </Button>
             </StackPanel>

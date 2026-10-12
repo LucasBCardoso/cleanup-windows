@@ -42,7 +42,7 @@
                         <TextBlock Text="{x:Bind Location}" Style="{StaticResource CaptionTextStyle}" />
                     </StackPanel>
                     <TextBlock Grid.Column="2" Text="{x:Bind SizeText}" Style="{StaticResource NumberTextStyle}" VerticalAlignment="Center" />
-                    <Button Grid.Column="3" Background="Transparent" BorderThickness="0" Padding="6" VerticalAlignment="Center"
+                    <Button Grid.Column="3" Background="Transparent" BorderThickness="0" Padding="6" AutomationProperties.Name="Mais opções" VerticalAlignment="Center"
                             Click="OnRevealItem" Tag="{x:Bind}" ToolTipService.ToolTip="Mostrar no Explorador"
                             Visibility="{x:Bind views:UninstallerView.RevealVisibility(Item.RuleId)}">
                         <FontIcon Glyph="&#xE838;" FontSize="13" />
@@ -233,7 +233,7 @@
                                                         <TextBlock Text="{x:Bind Location}" Style="{StaticResource CaptionTextStyle}" />
                                                     </StackPanel>
                                                     <TextBlock Grid.Column="2" Text="{x:Bind SizeText}" Style="{StaticResource NumberTextStyle}" VerticalAlignment="Center" />
-                                                    <Button Grid.Column="3" Background="Transparent" BorderThickness="0" Padding="6" VerticalAlignment="Center"
+                                                    <Button Grid.Column="3" Background="Transparent" BorderThickness="0" Padding="6" AutomationProperties.Name="Mais opções" VerticalAlignment="Center"
                                                             Click="OnRevealReport" Tag="{x:Bind}" ToolTipService.ToolTip="Mostrar no Explorador">
                                                         <FontIcon Glyph="&#xE838;" FontSize="13" />
                                                     </Button>

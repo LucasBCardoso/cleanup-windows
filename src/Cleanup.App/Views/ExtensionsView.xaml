@@ -104,7 +104,7 @@
                                 <TextBlock Text="{x:Bind Tag}" FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource BodyBrush}" />
                             </Border>
                             <TextBlock Grid.Column="4" Text="{x:Bind SizeText}" Style="{StaticResource NumberTextStyle}" VerticalAlignment="Center" />
-                            <Button Grid.Column="5" Background="Transparent" BorderThickness="0" Padding="6" VerticalAlignment="Center"
+                            <Button Grid.Column="5" Background="Transparent" BorderThickness="0" Padding="6" AutomationProperties.Name="Mais opções" VerticalAlignment="Center"
                                     Click="OnReveal" Tag="{x:Bind}" IsEnabled="{x:Bind CanReveal}" ToolTipService.ToolTip="Mostrar no Explorador">
                                 <FontIcon Glyph="&#xE838;" FontSize="13" />
                             </Button>

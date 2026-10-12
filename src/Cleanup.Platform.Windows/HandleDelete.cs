@@ -24,8 +24,11 @@ public static class HandleDelete
 
     private static void DeleteTree(SafeFileHandle handle, string display)
     {
-        var attributes = Attributes(handle);
-        if ((attributes & FileAttributes.Directory) != 0 && (attributes & FileAttributes.ReparsePoint) == 0)
+        var (attributes, tag) = AttributesAndTag(handle);
+        // Links (name-surrogate reparse tags: junctions, symlinks, mount points) are removed as links, never entered.
+        // Other reparse points hold their data (OneDrive syncs every folder as one), so they are emptied like folders.
+        var isLink = (attributes & FileAttributes.ReparsePoint) != 0 && (tag & 0x20000000) != 0;
+        if ((attributes & FileAttributes.Directory) != 0 && !isLink)
         {
             foreach (var name in Children(handle))
             {
@@ -41,11 +44,11 @@ public static class HandleDelete
         MarkForDeletion(handle, display);
     }
 
-    private static FileAttributes Attributes(SafeFileHandle handle)
+    private static (FileAttributes Attributes, uint Tag) AttributesAndTag(SafeFileHandle handle)
     {
-        if (!Native.GetFileInformationByHandleEx(handle, Native.FileBasicInfo, out Native.FILE_BASIC_INFO info, Marshal.SizeOf<Native.FILE_BASIC_INFO>()))
+        if (!Native.GetFileInformationByHandleEx(handle, Native.FileAttributeTagInfo, out Native.FILE_ATTRIBUTE_TAG_INFO info, Marshal.SizeOf<Native.FILE_ATTRIBUTE_TAG_INFO>()))
             throw new Win32Exception(Marshal.GetLastWin32Error());
-        return (FileAttributes)info.FileAttributes;
+        return ((FileAttributes)info.FileAttributes, info.ReparseTag);
     }
 
     /// <summary>Names in a directory, listed from its handle (FILE_ID_BOTH_DIR_INFO), without "." and "..".</summary>
@@ -135,6 +138,7 @@ public static class HandleDelete
         public const uint FILE_FLAG_BACKUP_SEMANTICS = 0x02000000;
         public const uint FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000;
         public const int FileBasicInfo = 0;
+        public const int FileAttributeTagInfo = 9;
         public const int FileDispositionInfo = 4;
         public const int FileIdBothDirectoryInfo = 10;
         public const int FileIdBothDirectoryRestartInfo = 11;
@@ -145,6 +149,13 @@ public static class HandleDelete
         {
             public long CreationTime, LastAccessTime, LastWriteTime, ChangeTime;
             public uint FileAttributes;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct FILE_ATTRIBUTE_TAG_INFO
+        {
+            public uint FileAttributes;
+            public uint ReparseTag;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -185,6 +196,10 @@ public static class HandleDelete
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool GetFileInformationByHandleEx(SafeFileHandle handle, int infoClass, out FILE_BASIC_INFO info, int size);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GetFileInformationByHandleEx(SafeFileHandle handle, int infoClass, out FILE_ATTRIBUTE_TAG_INFO info, int size);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]

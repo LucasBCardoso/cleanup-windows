@@ -23,7 +23,7 @@
                     </StackPanel>
                     <TextBlock Grid.Column="2" Text="{x:Bind ValueText, Mode=OneWay}" Style="{StaticResource NumberTextStyle}" Foreground="{ThemeResource InkBrush}"
                                VerticalAlignment="Center" />
-                    <Button Grid.Column="3" Background="Transparent" BorderThickness="0" Padding="6" VerticalAlignment="Center" ToolTipService.ToolTip="Encerrar">
+                    <Button Grid.Column="3" Background="Transparent" BorderThickness="0" Padding="6" AutomationProperties.Name="Mais opções" VerticalAlignment="Center" ToolTipService.ToolTip="Encerrar">
                         <FontIcon Glyph="&#xE711;" FontSize="12" Foreground="{ThemeResource BodyBrush}" />
                         <Button.Flyout>
                             <MenuFlyout Opening="OnProcessMenuOpening" Closed="OnProcessMenuClosed">
