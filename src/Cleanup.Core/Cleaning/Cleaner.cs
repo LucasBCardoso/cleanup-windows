@@ -19,8 +19,11 @@ public sealed record RecycleOutcome(string Path, bool Removed, string? RecycleBi
 /// <summary>The filesystem, behind an interface so tests can observe removals (the Swift <c>FileRemoving</c>).</summary>
 public interface IFileRemover
 {
-    /// <summary>Moves paths to the Recycle Bin; returns, per path, whether it left and where it landed when known.</summary>
-    IReadOnlyList<RecycleOutcome> Recycle(IReadOnlyList<string> paths);
+    /// <summary>
+    /// Moves paths to the Recycle Bin; returns, per path, whether it left and where it landed when known. <paramref name="sizes"/>
+    /// (path → bytes, as measured by the scan) lets the remover record sizes without walking folders again.
+    /// </summary>
+    IReadOnlyList<RecycleOutcome> Recycle(IReadOnlyList<string> paths, IReadOnlyDictionary<string, long>? sizes = null);
 
     /// <summary>Deletes permanently. A link (junction, symlink) is removed as a link, never followed.</summary>
     void Delete(string path);
@@ -93,7 +96,8 @@ public sealed class Cleaner(SafetyPolicy policy, IFileRemover remover, RemovalMo
                 break;
             case RemovalMode.RecycleBin:
                 var byPath = unique.ToDictionary(i => i.Path, StringComparer.OrdinalIgnoreCase);
-                foreach (var outcome in remover.Recycle(unique.Select(i => i.Path).ToList()))
+                var sizes = unique.ToDictionary(i => i.Path, i => i.Size, StringComparer.OrdinalIgnoreCase);
+                foreach (var outcome in remover.Recycle(unique.Select(i => i.Path).ToList(), sizes))
                 {
                     if (!byPath.TryGetValue(outcome.Path, out var item)) continue;
                     if (outcome.Removed)

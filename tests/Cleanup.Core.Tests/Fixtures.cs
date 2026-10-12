@@ -62,7 +62,7 @@ public sealed class FakeRemover : IFileRemover
     public bool Emptied { get; private set; }
     public HashSet<string> Locked { get; } = new(StringComparer.OrdinalIgnoreCase);
 
-    public IReadOnlyList<RecycleOutcome> Recycle(IReadOnlyList<string> paths) =>
+    public IReadOnlyList<RecycleOutcome> Recycle(IReadOnlyList<string> paths, IReadOnlyDictionary<string, long>? sizes = null) =>
         paths.Select(p =>
         {
             if (Locked.Contains(p)) return new RecycleOutcome(p, false, null, "em uso por outro programa");

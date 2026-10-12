@@ -88,7 +88,7 @@ public sealed class FakeRemover : IFileRemover
 {
     public List<string> Recycled { get; } = [];
 
-    public IReadOnlyList<RecycleOutcome> Recycle(IReadOnlyList<string> paths) => paths.Select(p =>
+    public IReadOnlyList<RecycleOutcome> Recycle(IReadOnlyList<string> paths, IReadOnlyDictionary<string, long>? sizes = null) => paths.Select(p =>
     {
         Recycled.Add(p);
         return new RecycleOutcome(p, true, @"C:\$Recycle.Bin\S-1-5-21-1\$R" + Recycled.Count, null);

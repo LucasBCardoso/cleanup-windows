@@ -159,9 +159,30 @@ public sealed class WindowsFileRemover : IFileRemover
     /// </summary>
     public bool Background { get; init; }
 
-    public IReadOnlyList<RecycleOutcome> Recycle(IReadOnlyList<string> paths)
+    public IReadOnlyList<RecycleOutcome> Recycle(IReadOnlyList<string> paths, IReadOnlyDictionary<string, long>? sizes = null)
     {
         var outcomes = new List<RecycleOutcome>();
+        // Fast path: what the shell does internally — one rename into this user's $Recycle.Bin folder on the same drive,
+        // plus the $I metadata Explorer reads. Constant time whatever the size: the shell instead walks every folder
+        // first (seconds for a node_modules or venv). Anything the fast path can't take goes to the shell below.
+        var forShell = new List<string>();
+        foreach (var path in paths)
+        {
+            switch (FastRecycle.TryMove(path, sizes?.GetValueOrDefault(path)))
+            {
+                case FastRecycle.Moved moved: outcomes.Add(new RecycleOutcome(path, true, moved.ItemPath, null)); break;
+                case FastRecycle.Failed failed: outcomes.Add(new RecycleOutcome(path, false, null, failed.Reason)); break;
+                default: forShell.Add(path); break;
+            }
+        }
+        if (outcomes.Count > 0)
+        {
+            // Explorer's refresh takes ~0.5 s and nobody needs to wait for it.
+            var recycled = outcomes.Select(o => o.RecycleBinPath).OfType<string>().ToList();
+            _ = Task.Run(() => FastRecycle.NotifyShell(recycled));
+        }
+        paths = forShell;
+        if (paths.Count == 0) return outcomes;
         if (Background)
         {
             var refused = paths.Select(p => (Path: p, Reason: RecycleBinLimits.WhyNot(p))).Where(r => r.Reason is not null).ToList();
