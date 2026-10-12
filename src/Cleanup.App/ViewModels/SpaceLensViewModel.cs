@@ -8,9 +8,29 @@ using Cleanup.Core.SpaceLens;
 
 namespace Cleanup.App.ViewModels;
 
-public sealed class LensRow(DirectoryEntry entry, long max)
+public sealed partial class LensRow : ObservableObject
 {
-    public DirectoryEntry Entry { get; } = entry;
+    private readonly long max;
+    private readonly Action? onSelectionChanged;
+
+    /// <param name="blockedReason">Why this item can't be moved to the Recycle Bin (safety policy, link), or null.</param>
+    public LensRow(DirectoryEntry entry, long max, string? blockedReason = null, Action? onSelectionChanged = null)
+    {
+        Entry = entry;
+        this.max = max;
+        BlockedReason = blockedReason;
+        this.onSelectionChanged = onSelectionChanged;
+    }
+
+    [ObservableProperty] private bool isSelected;
+
+    partial void OnIsSelectedChanged(bool value) => onSelectionChanged?.Invoke();
+
+    public string? BlockedReason { get; }
+    public bool CanSelect => BlockedReason is null;
+    public string? SelectNote => BlockedReason is null ? null : "Não pode ir para a Lixeira: " + BlockedReason;
+
+    public DirectoryEntry Entry { get; }
     public string Name => Entry.Name;
     public string SizeText => Entry.IsLink ? "link" : (Entry.IsPartial ? "≥ " : "") + ByteFormat.Format(Entry.Size);
     /// <summary>Why a size is a lower bound (shown as a tooltip).</summary>
@@ -43,6 +63,9 @@ public sealed partial class SpaceLensViewModel : ObservableObject
     [ObservableProperty] private string currentPath = "";
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(UpCommand))] private bool isMeasuring;
     [ObservableProperty] private long filesSeen;
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(RecycleSelectedCommand))] private int selectedCount;
+    [ObservableProperty] private string selectedText = "";
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(RecycleSelectedCommand))] private bool isRecycling;
     private SpaceTree? tree;
 
     /// <summary>Raised once a folder's rows are listed (the view scrolls back to the top).</summary>
@@ -87,6 +110,7 @@ public sealed partial class SpaceLensViewModel : ObservableObject
         CurrentPath = path;
         UpdateCrumbs();
         Rows.Clear();
+        UpdateSelection();
         Banner = null;
         IsMeasuring = true;
 
@@ -104,7 +128,8 @@ public sealed partial class SpaceLensViewModel : ObservableObject
             var entries = await Task.Run(() => current.Children(path), cts.Token);
             if (cts.IsCancellationRequested) return;
             var max = entries.FirstOrDefault()?.Size ?? 0;
-            foreach (var e in entries) Rows.Add(new LensRow(e, max));
+            var policy = services.Policy();
+            foreach (var e in entries) Rows.Add(new LensRow(e, max, BlockedReason(e, policy), UpdateSelection));
             Listed?.Invoke();
             var measured = entries.Sum(e => e.Size);
             TotalText = $"{ByteFormat.Format(measured)} em {entries.Count} {(entries.Count == 1 ? "item" : "itens")}";
@@ -163,15 +188,69 @@ public sealed partial class SpaceLensViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanGoUp))]
     private Task UpAsync() => Path.GetDirectoryName(CurrentPath) is { } parent ? OpenAsync(parent) : Task.CompletedTask;
 
-    public async Task RecycleAsync(LensRow row)
+    /// <summary>Why an item can't be selected: links, and whatever the safety policy refuses (the same check as at clean time).</summary>
+    private static string? BlockedReason(DirectoryEntry entry, Cleanup.Core.Safety.SafetyPolicy policy) =>
+        entry.IsLink ? "é um atalho para outra pasta"
+        : policy.Verdict(entry.Path) is Cleanup.Core.Safety.SafetyVerdict.Denied denied ? denied.Reason
+        : null;
+
+    public IReadOnlyList<LensRow> SelectedRows => Rows.Where(r => r.IsSelected).ToList();
+
+    private void UpdateSelection()
     {
-        var item = new ScanItem
+        var selected = Rows.Where(r => r.IsSelected).ToList();
+        SelectedCount = selected.Count;
+        SelectedText = selected.Count == 0 ? ""
+            : $"{selected.Count} {(selected.Count == 1 ? "item selecionado" : "itens selecionados")} · {ByteFormat.Format(selected.Sum(r => r.Entry.Size))}";
+    }
+
+    [RelayCommand]
+    private void ClearSelection()
+    {
+        foreach (var row in Rows) row.IsSelected = false;
+    }
+
+    [RelayCommand]
+    private void SelectAll()
+    {
+        foreach (var row in Rows.Where(r => r.CanSelect)) row.IsSelected = true;
+    }
+
+    private bool CanRecycleSelected() => SelectedCount > 0 && !IsRecycling;
+
+    /// <summary>The view confirms first (it owns the dialog), then calls this.</summary>
+    [RelayCommand(CanExecute = nameof(CanRecycleSelected))]
+    private Task RecycleSelectedAsync() => RecycleAsync(SelectedRows);
+
+    public Task RecycleAsync(LensRow row) => RecycleAsync([row]);
+
+    /// <summary>
+    /// To the Recycle Bin through the shared cleaner (the safety policy is checked again for every item), recorded in the
+    /// history so it can be undone, and taken off the measured tree so the sizes above stay right.
+    /// </summary>
+    public async Task RecycleAsync(IReadOnlyList<LensRow> rows)
+    {
+        if (IsRecycling || rows.Count == 0) return;
+        IsRecycling = true;
+        try
         {
-            Path = row.Entry.Path, Size = row.Entry.Size, RuleId = "space-lens", Category = ScanCategory.LargeOldFiles, Risk = RiskLevel.Review,
-        };
-        var result = await services.CleanAsync([item]);
-        await services.RecordAsync(result, null, "Space Lens");
-        if (result.Removed.Count > 0) Rows.Remove(row);
-        Banner = Banner.FromClean(result);
+            var items = rows.Select(r => new ScanItem
+            {
+                Path = r.Entry.Path, Size = r.Entry.Size, RuleId = "space-lens", Category = ScanCategory.LargeOldFiles, Risk = RiskLevel.Review,
+            }).ToList();
+            var result = await services.CleanAsync(items);
+            await services.RecordAsync(result, null, "Space Lens");
+            var removed = result.Removed.Select(i => i.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var row in rows.Where(r => removed.Contains(r.Entry.Path)).ToList())
+            {
+                tree?.Removed(row.Entry.Path, row.Entry.Size);
+                Rows.Remove(row);
+            }
+            UpdateSelection();
+            TotalText = $"{ByteFormat.Format(Rows.Sum(r => r.Entry.Size))} em {Rows.Count} {(Rows.Count == 1 ? "item" : "itens")}";
+            Banner = Banner.FromClean(result);
+        }
+        catch (Exception e) { Banner = new Banner(BannerKind.Error, e.Message); }
+        finally { IsRecycling = false; }
     }
 }

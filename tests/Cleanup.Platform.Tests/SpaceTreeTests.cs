@@ -39,6 +39,12 @@ public class SpaceTreeTests : IDisposable
         Assert.Equal(0, children.Single(c => c.Name == "link").Size);
         Assert.Equal(25, tree.Children(Path.Combine(root, @"a\b")).Single(c => c.Name == "c").Size);
 
+        // After a move to the Recycle Bin, the folders above drop by its size without walking again.
+        var shrunk = await SpaceTree.BuildAsync(Path.Combine(root, "a"));
+        shrunk.Removed(Path.Combine(root, @"a\b\c"), 25);
+        Assert.Equal(150, shrunk.Total.Bytes);
+        Assert.Equal(50, shrunk.Children(Path.Combine(root, "a")).Single(c => c.Name == "b").Size);
+
         // Going up reuses what was measured below, and adds the rest.
         var parent = await SpaceTree.BuildAsync(root, reuse: tree);
         Assert.Equal(175 + 10 + 5000, parent.Total.Bytes);

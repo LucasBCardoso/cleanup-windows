@@ -116,6 +116,20 @@ public sealed class SpaceTree
         return measure;
     }
 
+    /// <summary>
+    /// An item left (moved to the Recycle Bin): its bytes come off every folder above it, up to the root, so the
+    /// listing stays right without walking again.
+    /// </summary>
+    public void Removed(string path, long bytes)
+    {
+        foreach (var key in folders.Keys.Where(k => SafetyPolicy.IsWithin(k, path)).ToList()) folders.TryRemove(key, out _);
+        for (var parent = Path.GetDirectoryName(path); parent is not null && Covers(parent); parent = Path.GetDirectoryName(parent))
+        {
+            if (folders.TryGetValue(parent, out var m)) folders[parent] = m with { Bytes = Math.Max(0, m.Bytes - bytes) };
+        }
+        Total = Total with { Bytes = Math.Max(0, Total.Bytes - bytes) };
+    }
+
     /// <summary>One level of <paramref name="directory"/> (inside <see cref="Root"/>), largest first, sizes from the walk.</summary>
     public IReadOnlyList<DirectoryEntry> Children(string directory, bool includeHidden = false)
     {

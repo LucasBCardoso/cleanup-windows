@@ -63,19 +63,41 @@ public sealed partial class SpaceLensView : UserControl
         if ((sender as FrameworkElement)?.Tag is LensRow row) AppServices.Reveal(row.Entry.Path);
     }
 
+    public Visibility Show(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility Hide(bool value) => value ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility HasSelection(int count) => count > 0 ? Visibility.Visible : Visibility.Collapsed;
+    public bool CanRecycle(int count, bool recycling) => count > 0 && !recycling;
+    public string SelectionTitle(string text) => text.Length > 0 ? text : "Marque itens para mover para a Lixeira";
+
     private async void OnRecycle(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.Tag is not LensRow row) return;
+        if ((sender as FrameworkElement)?.Tag is LensRow row) await ConfirmAndRecycleAsync([row]);
+    }
+
+    private async void OnRecycleSelected(object sender, RoutedEventArgs e) => await ConfirmAndRecycleAsync(Model.SelectedRows);
+
+    /// <summary>Lists what goes (the first few names, the total) before anything moves.</summary>
+    private async Task ConfirmAndRecycleAsync(IReadOnlyList<LensRow> rows)
+    {
+        if (rows.Count == 0) return;
+        var total = Cleanup.Core.Models.ByteFormat.Format(rows.Sum(r => r.Entry.Size));
+        var names = string.Join(Environment.NewLine, rows.Take(8).Select(r => $"•  {r.Name}  ({r.SizeText})"));
+        if (rows.Count > 8) names += $"{Environment.NewLine}… e mais {rows.Count - 8}";
+        var oneDrive = Environment.GetEnvironmentVariable("OneDrive");
+        var inOneDrive = !string.IsNullOrEmpty(oneDrive)
+                         && rows.Any(r => Cleanup.Core.Safety.SafetyPolicy.IsWithin(r.Entry.Path, oneDrive));
+        var body = $"{names}{Environment.NewLine}{Environment.NewLine}Total: {total}. Dá para desfazer pelo Histórico enquanto estiver na Lixeira."
+                   + (inOneDrive ? $"{Environment.NewLine}{Environment.NewLine}Itens do OneDrive também saem da nuvem e dos seus outros dispositivos (ficam na lixeira do OneDrive)." : "");
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
             RequestedTheme = ActualTheme,
-            Title = $"Mover “{row.Name}” para a Lixeira?",
-            Content = $"{row.SizeText}. Dá para desfazer pelo Histórico enquanto estiver na Lixeira.",
+            Title = rows.Count == 1 ? $"Mover “{rows[0].Name}” para a Lixeira?" : $"Mover {rows.Count} itens para a Lixeira?",
+            Content = new ScrollViewer { MaxHeight = 320, Content = new TextBlock { Text = body, TextWrapping = TextWrapping.Wrap } },
             PrimaryButtonText = "Mover para a Lixeira",
             CloseButtonText = "Cancelar",
             DefaultButton = ContentDialogButton.Close,
         };
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary) await Model.RecycleAsync(row);
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary) await Model.RecycleAsync(rows);
     }
 }

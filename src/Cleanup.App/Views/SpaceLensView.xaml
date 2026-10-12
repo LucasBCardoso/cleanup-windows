@@ -80,17 +80,23 @@
                     <Grid ColumnSpacing="12" Padding="4">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="2*" />
                             <ColumnDefinition Width="3*" />
                             <ColumnDefinition Width="90" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <FontIcon Glyph="{x:Bind Glyph}" FontSize="15" Foreground="{ThemeResource AccentInkBrush}" />
-                        <TextBlock Grid.Column="1" Text="{x:Bind Name}" Style="{StaticResource RowTitleStyle}" VerticalAlignment="Center" />
-                        <ProgressBar Grid.Column="2" Maximum="1" Value="{x:Bind Fraction}" Height="8" CornerRadius="4" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="3" Text="{x:Bind SizeText}" Style="{StaticResource NumberTextStyle}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                        <!-- The wrapper carries the tooltip: a disabled checkbox gets no pointer events, so it can't show one. -->
+                        <Grid Background="Transparent" ToolTipService.ToolTip="{x:Bind SelectNote}" VerticalAlignment="Center">
+                            <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}" IsEnabled="{x:Bind CanSelect}" MinWidth="0" Padding="0"
+                                      AutomationProperties.Name="{x:Bind Name}" />
+                        </Grid>
+                        <FontIcon Grid.Column="1" Glyph="{x:Bind Glyph}" FontSize="15" Foreground="{ThemeResource AccentInkBrush}" />
+                        <TextBlock Grid.Column="2" Text="{x:Bind Name}" Style="{StaticResource RowTitleStyle}" VerticalAlignment="Center" />
+                        <ProgressBar Grid.Column="3" Maximum="1" Value="{x:Bind Fraction}" Height="8" CornerRadius="4" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="4" Text="{x:Bind SizeText}" Style="{StaticResource NumberTextStyle}" HorizontalAlignment="Right" VerticalAlignment="Center"
                                    ToolTipService.ToolTip="{x:Bind SizeNote}" />
-                        <Button Grid.Column="4" Background="Transparent" BorderThickness="0" Padding="6" AutomationProperties.Name="Mais opções">
+                        <Button Grid.Column="5" Background="Transparent" BorderThickness="0" Padding="6" AutomationProperties.Name="Mais opções">
                             <FontIcon Glyph="&#xE712;" FontSize="13" />
                             <Button.Flyout>
                                 <MenuFlyout>
@@ -101,7 +107,7 @@
                                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE838;" /></MenuFlyoutItem.Icon>
                                     </MenuFlyoutItem>
                                     <MenuFlyoutSeparator />
-                                    <MenuFlyoutItem Text="Mover para a Lixeira…" Click="OnRecycle" Tag="{x:Bind}">
+                                    <MenuFlyoutItem Text="Mover para a Lixeira…" Click="OnRecycle" Tag="{x:Bind}" IsEnabled="{x:Bind CanSelect}">
                                         <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74D;" /></MenuFlyoutItem.Icon>
                                     </MenuFlyoutItem>
                                 </MenuFlyout>
@@ -112,9 +118,33 @@
             </ListView.ItemTemplate>
         </ListView>
 
-        <Border Grid.Row="4" BorderBrush="{ThemeResource HairlineBrush}" BorderThickness="0,1,0,0" Background="{ThemeResource SurfaceBrush}" Padding="24,10"
-                Visibility="{x:Bind HasBanner(Model.Banner), Mode=OneWay}">
-            <controls:BannerView Banner="{x:Bind Model.Banner, Mode=OneWay}" Dismissed="OnBannerDismissed" />
+        <!-- Footer: the selection (several items at once) and the result of the last move. -->
+        <Border Grid.Row="4" BorderBrush="{ThemeResource HairlineBrush}" BorderThickness="0,1,0,0" Background="{ThemeResource SurfaceBrush}" Padding="24,12">
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{x:Bind SelectionTitle(Model.SelectedText), Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <HyperlinkButton Content="Selecionar tudo" Padding="0" FontSize="12" Command="{x:Bind Model.SelectAllCommand}" />
+                        <HyperlinkButton Content="Limpar seleção" Padding="0" FontSize="12" Command="{x:Bind Model.ClearSelectionCommand}"
+                                         Visibility="{x:Bind HasSelection(Model.SelectedCount), Mode=OneWay}" />
+                    </StackPanel>
+                </StackPanel>
+                <controls:BannerView Grid.Column="1" VerticalAlignment="Center" Banner="{x:Bind Model.Banner, Mode=OneWay}" Dismissed="OnBannerDismissed" />
+                <Button Grid.Column="2" Style="{StaticResource AccentButtonStyle}" Click="OnRecycleSelected" VerticalAlignment="Center"
+                        IsEnabled="{x:Bind CanRecycle(Model.SelectedCount, Model.IsRecycling), Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ProgressRing IsActive="{x:Bind Model.IsRecycling, Mode=OneWay}" Width="16" Height="16" Foreground="{ThemeResource OnAccentBrush}"
+                                      Visibility="{x:Bind Show(Model.IsRecycling), Mode=OneWay}" />
+                        <FontIcon Glyph="&#xE74D;" FontSize="13" Visibility="{x:Bind Hide(Model.IsRecycling), Mode=OneWay}" />
+                        <TextBlock Text="Mover para a Lixeira" />
+                    </StackPanel>
+                </Button>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>
