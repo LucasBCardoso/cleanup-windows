@@ -156,6 +156,8 @@ public sealed partial class DuplicatesViewModel : ObservableObject
     public bool CanEditFolders => !IsScanning;
 
     public string ScanTitle => HasResults ? "Procurar de novo" : "Procurar";
+    /// <summary>Search at first, refresh once there are results.</summary>
+    public string ScanGlyph => ((char)(HasResults ? 0xE72C : 0xE721)).ToString();
     public string IdleMessage => Roots.Count == 0
         ? "Escolha as pastas acima. Arquivos só na nuvem (OneDrive) não são baixados nem comparados."
         : "Procura arquivos idênticos e fotos parecidas. Uma cópia de cada grupo sempre fica.";
@@ -187,7 +189,7 @@ public sealed partial class DuplicatesViewModel : ObservableObject
         foreach (var name in (string[])[nameof(IsScanning), nameof(HasResults), nameof(IsIdenticalTab), nameof(IsSimilarTab), nameof(CurrentList), nameof(ShowIdle), nameof(ShowProgress),
                      nameof(ShowIdenticalList), nameof(ShowIdenticalEmpty), nameof(ShowSimilarList), nameof(ShowSimilarEmpty),
                      nameof(ShowPhotosCancelled), nameof(ShowIdenticalBar), nameof(ShowSimilarBar), nameof(ShowSimilarity), nameof(ShowKeepRule),
-                     nameof(CanEditFolders), nameof(ScanTitle), nameof(IdleMessage), nameof(PhaseTitle), nameof(IdenticalEmptyMessage),
+                     nameof(CanEditFolders), nameof(ScanTitle), nameof(ScanGlyph), nameof(IdleMessage), nameof(PhaseTitle), nameof(IdenticalEmptyMessage),
                      nameof(Subtitle), nameof(SelectedSize), nameof(SelectedSizeText)])
             OnPropertyChanged(name);
         ScanCommand.NotifyCanExecuteChanged();

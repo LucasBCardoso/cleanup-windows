@@ -53,6 +53,31 @@ public sealed partial class HomeView : UserControl
         BinLine.Text = bin.Items == 0 ? "A Lixeira está vazia." : $"{bin.Items} {(bin.Items == 1 ? "item" : "itens")} em todas as unidades. O Smart Scan pode esvaziá-la.";
     }
 
+    /// <summary>"Verificar de novo": the junk scan plus every tile (disk, Recycle Bin, updates, forgotten apps).</summary>
+    private async void OnRefreshAll(object sender, RoutedEventArgs e)
+    {
+        if (Scan.ScanCommand.CanExecute(null)) Scan.ScanCommand.Execute(null);
+        var updater = AppsViewModels.Updater;
+        if (updater.CheckCommand.CanExecute(null)) updater.CheckCommand.Execute(null);
+        await RefreshTilesAsync();
+        ForgottenCount.Text = "…";
+        ForgottenLine.Text = "Contando apps sem uso…";
+        var uninstaller = UninstallerViewModel.Shared;
+        if (uninstaller.RefreshCommand.CanExecute(null)) await uninstaller.RefreshCommand.ExecuteAsync(null);
+        ShowForgotten(uninstaller.ForgottenCount ?? 0);
+    }
+
+    private void ShowForgotten(int forgotten)
+    {
+        ForgottenCount.Text = forgotten.ToString();
+        ForgottenLine.Text = forgotten switch
+        {
+            0 => "Nenhum app parado há mais de 6 meses.",
+            1 => "1 app não é usado há mais de 6 meses.",
+            _ => $"{forgotten} apps não são usados há mais de 6 meses.",
+        };
+    }
+
     private bool appTilesStarted;
 
     /// <summary>Atualizações (a read-only winget listing) and Apps esquecidos (6 months unused), once per launch.</summary>

@@ -139,6 +139,8 @@ public sealed partial class DeveloperViewModel : ObservableObject
     };
 
     public string ScanTitle => HasScanned ? "Escanear novamente" : "Escanear";
+    /// <summary>Search at first, refresh once there are results.</summary>
+    public string ScanGlyph => ((char)(HasScanned ? 0xE72C : 0xE721)).ToString();
     public string SelectedSizeText => ByteFormat.Format(CurrentList.SelectedSize);
     public string FoldersSummary => Folders.Count == 0 ? "nenhuma pasta de projetos encontrada" : "";
 
@@ -147,7 +149,7 @@ public sealed partial class DeveloperViewModel : ObservableObject
         foreach (var name in (string[])[nameof(ShowProjects), nameof(ShowCaches), nameof(ShowTools), nameof(CurrentList), nameof(IsScanning),
                      nameof(HasScanned), nameof(ShowFooter), nameof(ShowProjectsIdle), nameof(ShowProjectsProgress), nameof(ShowProjectsList),
                      nameof(ShowProjectsEmpty), nameof(ShowCachesIdle), nameof(ShowCachesProgress), nameof(ShowCachesList), nameof(ShowCachesEmpty),
-                     nameof(ShowDockerError), nameof(ShowDockerActions), nameof(ShowNoWslDisks), nameof(ShowNoTools), nameof(ToolsIdle), nameof(Subtitle), nameof(ScanTitle), nameof(SelectedSizeText),
+                     nameof(ShowDockerError), nameof(ShowDockerActions), nameof(ShowNoWslDisks), nameof(ShowNoTools), nameof(ToolsIdle), nameof(Subtitle), nameof(ScanTitle), nameof(ScanGlyph), nameof(SelectedSizeText),
                      nameof(FoldersSummary)])
             OnPropertyChanged(name);
         ScanCommand.NotifyCanExecuteChanged();

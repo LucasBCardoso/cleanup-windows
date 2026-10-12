@@ -33,7 +33,8 @@
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <ProgressRing IsActive="{x:Bind Model.IsScanning, Mode=OneWay}" Width="16" Height="16" Foreground="{ThemeResource OnAccentBrush}"
                                   Visibility="{x:Bind Show(Model.IsScanning), Mode=OneWay}" />
-                    <TextBlock Text="Procurar" />
+                    <FontIcon Glyph="{x:Bind Model.ScanGlyph, Mode=OneWay}" FontSize="13" Visibility="{x:Bind Hide(Model.IsScanning), Mode=OneWay}" />
+                    <TextBlock Text="{x:Bind Model.ScanTitle, Mode=OneWay}" />
                 </StackPanel>
             </Button>
         </Grid>

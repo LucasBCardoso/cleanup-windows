@@ -123,6 +123,23 @@ public sealed partial class SpaceLensViewModel : ObservableObject
         }
     }
 
+    /// <summary>"Atualizar": the disk strip and the current folder, measured again.</summary>
+    [RelayCommand]
+    private Task RefreshAsync()
+    {
+        var path = CurrentPath;
+        var drive = SelectedDrive?.Root;
+        loadingDrives = true;
+        Drives.Clear();
+        foreach (var d in DriveInfo.GetDrives().Where(d => d.IsReady && d.DriveType is DriveType.Fixed or DriveType.Removable))
+        {
+            if (DiskSpace.Of(d.Name) is { } disk) Drives.Add(new DriveRow(d, disk));
+        }
+        SelectedDrive = Drives.FirstOrDefault(d => d.Root == drive) ?? Drives.FirstOrDefault();
+        loadingDrives = false;
+        return OpenAsync(string.IsNullOrEmpty(path) ? services.Environment.Home : path);
+    }
+
     private bool CanGoUp() => Path.GetDirectoryName(CurrentPath) is not null;
 
     [RelayCommand(CanExecute = nameof(CanGoUp))]

@@ -15,6 +15,8 @@ public sealed partial class DeveloperView : UserControl
         if (Model.ShowTools) _ = Model.LoadToolsAsync();
     }
 
+    private async void OnRefreshTools(object sender, RoutedEventArgs e) => await Model.LoadToolsAsync();
+
     public Visibility Show(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
     public Visibility Hide(bool value) => value ? Visibility.Collapsed : Visibility.Visible;
     public bool Hide2(bool value) => !value;

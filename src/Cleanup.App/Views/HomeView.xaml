@@ -21,7 +21,10 @@
                     <TextBlock Text="{x:Bind Subtitle(Scan.Phase, Scan.SafeSelectedSize), Mode=OneWay}" Style="{StaticResource BodyTextStyle}"
                                Foreground="{ThemeResource MuteBrush}" />
                 </StackPanel>
-                <Button Grid.Column="1" Style="{StaticResource SubtleButtonStyle}" VerticalAlignment="Bottom" Command="{x:Bind Scan.ScanCommand}">
+                <Button Grid.Column="1" Style="{StaticResource SubtleButtonStyle}" VerticalAlignment="Bottom" Click="OnRefreshAll" ToolTipService.ToolTip="Verificar o lixo de novo e atualizar disco, Lixeira, atualizações e apps (F5)">
+                    <Button.KeyboardAccelerators>
+                        <KeyboardAccelerator Key="F5" />
+                    </Button.KeyboardAccelerators>
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <FontIcon Glyph="&#xE72C;" FontSize="12" />
                         <TextBlock Text="Verificar de novo" />

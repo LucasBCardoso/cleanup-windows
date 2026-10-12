@@ -25,7 +25,11 @@ public sealed partial class LargeFilesViewModel : SelectableList
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(HasResults))] [NotifyCanExecuteChangedFor(nameof(ScanCommand), nameof(CleanCommand))]
     private bool isScanning;
     [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(ScanCommand), nameof(CleanCommand))] private bool isCleaning;
-    [ObservableProperty] private bool hasScanned;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ScanTitle), nameof(ScanGlyph))] private bool hasScanned;
+
+    public string ScanTitle => HasScanned ? "Procurar de novo" : "Procurar";
+    /// <summary>Search at first, refresh once there are results.</summary>
+    public string ScanGlyph => ((char)(HasScanned ? 0xE72C : 0xE721)).ToString();
     [ObservableProperty] private Banner? banner;
 
     public bool HasResults => HasScanned && !IsScanning;
