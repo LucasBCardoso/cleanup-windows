@@ -1,0 +1,142 @@
+<UserControl
+    x:Class="Cleanup.App.Views.LargeFilesView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Cleanup.App.ViewModels"
+    xmlns:controls="using:Cleanup.App.Controls">
+    <UserControl.Resources>
+        <CollectionViewSource x:Name="GroupedItems" Source="{x:Bind Model.Groups, Mode=OneWay}" IsSourceGrouped="True" />
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid Padding="24,18,24,12" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Spacing="2">
+                <TextBlock Text="Arquivos grandes" Style="{StaticResource ModuleTitleStyle}" />
+                <TextBlock Text="Arquivos grandes na sua pasta pessoal. Nada vem marcado: são seus documentos." Style="{StaticResource CaptionTextStyle}" />
+            </StackPanel>
+            <ComboBox Grid.Column="1" Header="Maior que" ItemsSource="{x:Bind Model.SizeLabels}" SelectedIndex="{x:Bind Model.SizeIndex, Mode=TwoWay}"
+                      MinWidth="120" VerticalAlignment="Bottom" />
+            <ComboBox Grid.Column="2" Header="Sem uso há" ItemsSource="{x:Bind Model.AgeLabels}" SelectedIndex="{x:Bind Model.AgeIndex, Mode=TwoWay}"
+                      MinWidth="140" VerticalAlignment="Bottom" />
+            <Button Grid.Column="3" Style="{StaticResource AccentButtonStyle}" Command="{x:Bind Model.ScanCommand}" VerticalAlignment="Bottom">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ProgressRing IsActive="{x:Bind Model.IsScanning, Mode=OneWay}" Width="16" Height="16" Foreground="{ThemeResource OnAccentBrush}"
+                                  Visibility="{x:Bind Show(Model.IsScanning), Mode=OneWay}" />
+                    <TextBlock Text="Procurar" />
+                </StackPanel>
+            </Button>
+        </Grid>
+        <controls:SelectionBar Grid.Row="1" List="{x:Bind Model}" Visibility="{x:Bind ShowAny(Model.TotalCount), Mode=OneWay}" />
+
+        <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10" MaxWidth="420"
+                    Visibility="{x:Bind ShowEmpty(Model.TotalCount, Model.IsScanning), Mode=OneWay}">
+            <FontIcon Glyph="&#xE8A5;" FontSize="40" Foreground="{ThemeResource MuteBrush}" />
+            <TextBlock Text="Vídeos, imagens de disco, instaladores e backups esquecidos ocupam muito espaço. Escolha um tamanho e procure."
+                       Style="{StaticResource BodyTextStyle}" TextAlignment="Center" Foreground="{ThemeResource MuteBrush}" />
+        </StackPanel>
+        <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10" Visibility="{x:Bind Show(Model.IsScanning), Mode=OneWay}">
+            <ProgressRing IsActive="True" Width="56" Height="56" />
+            <TextBlock Text="Procurando arquivos grandes…" Style="{StaticResource BodyTextStyle}" />
+        </StackPanel>
+
+        <ListView Grid.Row="2" ItemsSource="{x:Bind GroupedItems.View, Mode=OneWay}" SelectionMode="None" Padding="10,0,10,8"
+                  Visibility="{x:Bind ShowAny(Model.TotalCount), Mode=OneWay}">
+            <ListView.GroupStyle>
+                <GroupStyle>
+                    <GroupStyle.HeaderContainerStyle>
+                        <Style TargetType="ListViewHeaderItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Margin" Value="0" />
+                            <Setter Property="Padding" Value="4,0" />
+                            <Setter Property="MinHeight" Value="0" />
+                            <Setter Property="BorderThickness" Value="0" />
+                        </Style>
+                    </GroupStyle.HeaderContainerStyle>
+                    <GroupStyle.HeaderTemplate>
+                        <DataTemplate x:DataType="vm:ItemGroup">
+                            <Grid Padding="4,10,8,4">
+                                <TextBlock Text="{x:Bind Title}" Style="{StaticResource SectionLabelStyle}" />
+                                <TextBlock Text="{x:Bind SizeText}" Style="{StaticResource SectionLabelStyle}" HorizontalAlignment="Right" />
+                            </Grid>
+                        </DataTemplate>
+                    </GroupStyle.HeaderTemplate>
+                </GroupStyle>
+            </ListView.GroupStyle>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="Padding" Value="4,2" />
+                    <Setter Property="MinHeight" Value="0" />
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="vm:ItemRow">
+                    <Border Style="{StaticResource RowCardStyle}">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}" MinWidth="0" Padding="0" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind Name}" Style="{StaticResource RowTitleStyle}" />
+                                <TextBlock Text="{x:Bind Location}" Style="{StaticResource CaptionTextStyle}" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="{x:Bind LastUsedText}" Style="{StaticResource CaptionTextStyle}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="3" Text="{x:Bind SizeText}" Style="{StaticResource NumberTextStyle}" VerticalAlignment="Center" />
+                            <Button Grid.Column="4" Background="Transparent" BorderThickness="0" Padding="6" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE712;" FontSize="13" />
+                                <Button.Flyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem Text="Mostrar no Explorador" Click="OnReveal" Tag="{x:Bind}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE838;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Text="Nunca sugerir este arquivo" Click="OnIgnore" Tag="{x:Bind}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8F8;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <Border Grid.Row="3" BorderBrush="{ThemeResource HairlineBrush}" BorderThickness="0,1,0,0" Background="{ThemeResource SurfaceBrush}" Padding="24,12">
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="SELECIONADO" Style="{StaticResource SectionLabelStyle}" />
+                    <TextBlock Text="{x:Bind Model.SelectedSizeText, Mode=OneWay}" Style="{StaticResource DisplayTextStyle}" FontSize="22" />
+                </StackPanel>
+                <controls:BannerView Grid.Column="1" VerticalAlignment="Center" Banner="{x:Bind Model.Banner, Mode=OneWay}" Dismissed="OnBannerDismissed" />
+                <Button Grid.Column="2" Style="{StaticResource AccentButtonStyle}" Command="{x:Bind Model.CleanCommand}" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ProgressRing IsActive="{x:Bind Model.IsCleaning, Mode=OneWay}" Width="16" Height="16" Foreground="{ThemeResource OnAccentBrush}"
+                                      Visibility="{x:Bind Show(Model.IsCleaning), Mode=OneWay}" />
+                        <TextBlock Text="Mover para a Lixeira" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

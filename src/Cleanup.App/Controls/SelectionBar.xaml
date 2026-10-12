@@ -1,0 +1,26 @@
+<UserControl
+    x:Class="Cleanup.App.Controls.SelectionBar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- "Selecionar tudo" (none / some / all), the search box, and "N de M selecionados" (+ hidden selected). -->
+    <Grid Padding="22,0,22,8" ColumnSpacing="14">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <CheckBox x:Name="SelectAll" IsThreeState="True" Click="OnSelectAllClick" MinWidth="0" VerticalAlignment="Center"
+                  IsChecked="{x:Bind List.SelectAllState, Mode=OneWay}">
+            <TextBlock Text="{x:Bind List.SelectAllText, Mode=OneWay}" Style="{StaticResource RowTitleStyle}" />
+        </CheckBox>
+        <TextBox Grid.Column="1" Style="{StaticResource SearchBoxStyle}" VerticalAlignment="Center"
+                 Text="{x:Bind List.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <StackPanel Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right">
+            <TextBlock Text="{x:Bind List.CountLabel, Mode=OneWay}" Style="{StaticResource CaptionTextStyle}" HorizontalAlignment="Right" />
+            <TextBlock x:Name="Hidden" Text="{x:Bind List.HiddenLabel, Mode=OneWay}" Style="{StaticResource CaptionTextStyle}"
+                       Foreground="{ThemeResource WarnBrush}" HorizontalAlignment="Right"
+                       Visibility="{x:Bind HasHidden(List.HiddenLabel), Mode=OneWay}" />
+        </StackPanel>
+    </Grid>
+</UserControl>

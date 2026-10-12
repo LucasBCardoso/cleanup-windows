@@ -73,7 +73,7 @@ public class SharedVectorsTests
     [InlineData("privileged-batch.json")]
     [InlineData("health.json")]
     [InlineData("autoclean.json")]
-    [InlineData("deeplinks.json")]
+    
     
     public void PendingVectorsAreWellFormed(string file)
     {

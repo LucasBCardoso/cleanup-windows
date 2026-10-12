@@ -1,0 +1,161 @@
+<UserControl
+    x:Class="Cleanup.App.Views.SmartScanView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Cleanup.App.ViewModels"
+    xmlns:controls="using:Cleanup.App.Controls">
+    <UserControl.Resources>
+        <CollectionViewSource x:Name="GroupedItems" Source="{x:Bind Model.Groups, Mode=OneWay}" IsSourceGrouped="True" />
+    </UserControl.Resources>
+    <Grid>
+        <!-- Idle -->
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" MaxWidth="460"
+                    Visibility="{x:Bind Show(Model.IsIdle), Mode=OneWay}">
+            <TextBlock Text="&#x2726;" FontFamily="Segoe UI Symbol" FontSize="54" HorizontalAlignment="Center" Foreground="{ThemeResource AccentBrush}" />
+            <TextBlock Text="Smart Scan" Style="{StaticResource ModuleTitleStyle}" HorizontalAlignment="Center" />
+            <TextBlock Text="Encontre temporários, caches, relatórios de erro e itens da Lixeira que podem ser removidos com segurança."
+                       Style="{StaticResource BodyTextStyle}" TextAlignment="Center" Foreground="{ThemeResource MuteBrush}" />
+            <Button Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Center" Margin="0,8,0,0" Command="{x:Bind Model.ScanCommand}" Content="Escanear" />
+            <controls:BannerView Banner="{x:Bind Model.Banner, Mode=OneWay}" Dismissed="OnBannerDismissed" />
+        </StackPanel>
+
+        <!-- Scanning -->
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14" Visibility="{x:Bind Show(Model.IsScanning), Mode=OneWay}">
+            <ProgressRing IsIndeterminate="False" Value="{x:Bind Model.Progress, Mode=OneWay}" Width="96" Height="96" HorizontalAlignment="Center" />
+            <TextBlock Text="Escaneando…" Style="{StaticResource ModuleTitleStyle}" HorizontalAlignment="Center" />
+            <TextBlock Text="{x:Bind Model.CurrentTask, Mode=OneWay}" Style="{StaticResource CaptionTextStyle}" HorizontalAlignment="Center" />
+        </StackPanel>
+
+        <!-- Results -->
+        <Grid Visibility="{x:Bind Show(Model.HasResults), Mode=OneWay}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid Padding="24,18,24,12">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="Smart Scan" Style="{StaticResource ModuleTitleStyle}" />
+                    <TextBlock Text="{x:Bind Summary(Model.TotalSize, Model.TotalCount), Mode=OneWay}" Style="{StaticResource CaptionTextStyle}" />
+                </StackPanel>
+                <Button Style="{StaticResource SubtleButtonStyle}" HorizontalAlignment="Right" VerticalAlignment="Center" Command="{x:Bind Model.ScanCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE72C;" FontSize="12" />
+                        <TextBlock Text="Escanear novamente" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+            <controls:SelectionBar Grid.Row="1" List="{x:Bind Model}" Visibility="{x:Bind ShowAny(Model.TotalCount), Mode=OneWay}" />
+
+            <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" Visibility="{x:Bind ShowEmpty(Model.TotalCount), Mode=OneWay}">
+                <FontIcon Glyph="&#xE73E;" FontSize="40" Foreground="{ThemeResource OkBrush}" />
+                <TextBlock Text="Tudo limpo" Style="{StaticResource ModuleTitleStyle}" HorizontalAlignment="Center" />
+                <TextBlock Text="Não há nada para remover agora." Style="{StaticResource BodyTextStyle}" HorizontalAlignment="Center" />
+            </StackPanel>
+
+            <ListView Grid.Row="2" ItemsSource="{x:Bind GroupedItems.View, Mode=OneWay}" SelectionMode="None" Padding="10,0,10,8"
+                      Visibility="{x:Bind ShowAny(Model.TotalCount), Mode=OneWay}">
+                <ListView.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.HeaderContainerStyle>
+                            <Style TargetType="ListViewHeaderItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Margin" Value="0" />
+                                <Setter Property="Padding" Value="4,0" />
+                                <Setter Property="MinHeight" Value="0" />
+                                <Setter Property="BorderThickness" Value="0" />
+                            </Style>
+                        </GroupStyle.HeaderContainerStyle>
+                        <GroupStyle.HeaderTemplate>
+                            <DataTemplate x:DataType="vm:ItemGroup">
+                                <Grid Padding="4,10,8,4">
+                                    <TextBlock Text="{x:Bind Title}" Style="{StaticResource SectionLabelStyle}" />
+                                    <TextBlock Text="{x:Bind SizeText}" Style="{StaticResource SectionLabelStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </DataTemplate>
+                        </GroupStyle.HeaderTemplate>
+                    </GroupStyle>
+                </ListView.GroupStyle>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Padding" Value="4,2" />
+                        <Setter Property="MinHeight" Value="0" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ItemRow">
+                        <Border Style="{StaticResource RowCardStyle}">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}" MinWidth="0" Padding="0" VerticalAlignment="Center" />
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{x:Bind Name}" Style="{StaticResource RowTitleStyle}" />
+                                    <TextBlock Text="{x:Bind Location}" Style="{StaticResource CaptionTextStyle}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <Border Style="{StaticResource TagStyle}" Visibility="{x:Bind IsReview}">
+                                        <TextBlock Text="revisar" FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource WarnBrush}" />
+                                    </Border>
+                                    <FontIcon Glyph="&#xE72E;" FontSize="12" Foreground="{ThemeResource MuteBrush}" Visibility="{x:Bind IsAdmin}"
+                                              ToolTipService.ToolTip="Do sistema: pede permissão de administrador" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="3" Text="{x:Bind SizeText}" Style="{StaticResource NumberTextStyle}" VerticalAlignment="Center" />
+                                <Button Grid.Column="4" Background="Transparent" BorderThickness="0" Padding="6" VerticalAlignment="Center">
+                                    <FontIcon Glyph="&#xE712;" FontSize="13" />
+                                    <Button.Flyout>
+                                        <MenuFlyout>
+                                            <MenuFlyoutItem Text="Mostrar no Explorador" Click="OnReveal" Tag="{x:Bind}" IsEnabled="{x:Bind CanReveal}">
+                                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE838;" /></MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
+                                            <MenuFlyoutItem Text="Nunca sugerir este item" Click="OnIgnore" Tag="{x:Bind}" IsEnabled="{x:Bind CanReveal}">
+                                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8F8;" /></MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
+                                        </MenuFlyout>
+                                    </Button.Flyout>
+                                </Button>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <!-- Footer -->
+            <Border Grid.Row="3" BorderBrush="{ThemeResource HairlineBrush}" BorderThickness="0,1,0,0" Background="{ThemeResource SurfaceBrush}" Padding="24,12">
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="SELECIONADO" Style="{StaticResource SectionLabelStyle}" />
+                        <TextBlock Text="{x:Bind Model.SelectedSizeText, Mode=OneWay}" Style="{StaticResource DisplayTextStyle}" FontSize="22" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                        <controls:BannerView Banner="{x:Bind Model.Banner, Mode=OneWay}" Dismissed="OnBannerDismissed" />
+                        <StackPanel Orientation="Horizontal" Spacing="6" Visibility="{x:Bind ShowAny(Model.SelectedAdminCount), Mode=OneWay}">
+                            <FontIcon Glyph="&#xE72E;" FontSize="11" Foreground="{ThemeResource MuteBrush}" />
+                            <TextBlock Text="{x:Bind AdminNote(Model.SelectedAdminCount), Mode=OneWay}" Style="{StaticResource CaptionTextStyle}" />
+                        </StackPanel>
+                    </StackPanel>
+                    <Button Grid.Column="2" Style="{StaticResource AccentButtonStyle}" Command="{x:Bind Model.CleanCommand}" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ProgressRing IsActive="{x:Bind Model.IsCleaning, Mode=OneWay}" Width="16" Height="16" Foreground="{ThemeResource OnAccentBrush}"
+                                          Visibility="{x:Bind Show(Model.IsCleaning), Mode=OneWay}" />
+                            <TextBlock Text="&#x2726;" FontFamily="Segoe UI Symbol" Visibility="{x:Bind Hide(Model.IsCleaning), Mode=OneWay}" />
+                            <TextBlock Text="Limpar" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

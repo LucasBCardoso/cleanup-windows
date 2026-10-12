@@ -1,0 +1,61 @@
+<Window
+    x:Class="Cleanup.App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Cleanup">
+    <Grid x:Name="RootGrid" Background="{ThemeResource CanvasBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Modifiers="Control" Key="Number1" Invoked="OnTabAccelerator" />
+            <KeyboardAccelerator Modifiers="Control" Key="Number2" Invoked="OnTabAccelerator" />
+            <KeyboardAccelerator Modifiers="Control" Key="Number3" Invoked="OnTabAccelerator" />
+            <KeyboardAccelerator Modifiers="Control" Key="Number4" Invoked="OnTabAccelerator" />
+            <KeyboardAccelerator Modifiers="Control" Key="Number5" Invoked="OnTabAccelerator" />
+            <KeyboardAccelerator Modifiers="Control" Key="R" Invoked="OnScanAccelerator" />
+            <KeyboardAccelerator Modifiers="Control" Key="Y" Invoked="OnHistoryAccelerator" />
+        </Grid.KeyboardAccelerators>
+
+        <!-- Title bar (drag area): the sparkles mark, black in Daybreak and white in Ledger. -->
+        <Grid x:Name="TitleArea" Padding="18,0,0,0" ColumnSpacing="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Text="&#x2726;" FontFamily="Segoe UI Symbol" FontSize="16" Foreground="{ThemeResource InkBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="Cleanup" FontFamily="{StaticResource DisplayFontFamily}" FontWeight="SemiBold" FontSize="15"
+                           Foreground="{ThemeResource InkBrush}" VerticalAlignment="Center" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Top tabs, with history and settings on the right. -->
+        <Grid Grid.Row="1" Padding="18,2,18,8">
+            <StackPanel x:Name="TabsPanel" Orientation="Horizontal" Spacing="4" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6">
+                <Button Style="{StaticResource SubtleButtonStyle}" Click="OnHistory" ToolTipService.ToolTip="Histórico de limpezas (Ctrl+Y)">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE81C;" FontSize="13" />
+                        <TextBlock Text="Histórico" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource SubtleButtonStyle}" Click="OnSettings" ToolTipService.ToolTip="Ajustes">
+                    <FontIcon Glyph="&#xE713;" FontSize="13" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Icon sub-tabs, when a tab has several modules. -->
+        <StackPanel x:Name="SubTabsPanel" Grid.Row="2" Orientation="Horizontal" Spacing="4" Padding="18,0,18,8" />
+
+        <Border Grid.Row="3" BorderBrush="{ThemeResource HairlineBrush}" BorderThickness="0,1,0,0">
+            <ContentControl x:Name="Host" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" IsTabStop="False" />
+        </Border>
+
+        <InfoBar x:Name="ErrorBar" Grid.Row="3" VerticalAlignment="Bottom" Margin="18" Severity="Error" Title="Algo deu errado" />
+    </Grid>
+</Window>

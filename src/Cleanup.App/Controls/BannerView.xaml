@@ -1,0 +1,34 @@
+<UserControl
+    x:Class="Cleanup.App.Controls.BannerView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- A module's result line: icon, message, "Detalhes" flyout and a close button. -->
+    <Grid x:Name="Root" ColumnSpacing="10" Visibility="Collapsed">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Grid VerticalAlignment="Center">
+            <FontIcon x:Name="OkIcon" Glyph="&#xE73E;" FontSize="14" Foreground="{ThemeResource OkBrush}" />
+            <FontIcon x:Name="InfoIcon" Glyph="&#xE946;" FontSize="14" Foreground="{ThemeResource MuteBrush}" />
+            <FontIcon x:Name="WarnIcon" Glyph="&#xE7BA;" FontSize="14" Foreground="{ThemeResource WarnBrush}" />
+            <FontIcon x:Name="ErrorIcon" Glyph="&#xE783;" FontSize="14" Foreground="{ThemeResource DangerBrush}" />
+        </Grid>
+        <TextBlock x:Name="Message" Grid.Column="1" Style="{StaticResource BodyTextStyle}" FontSize="13" VerticalAlignment="Center"
+                   MaxLines="2" TextTrimming="CharacterEllipsis" />
+        <Button x:Name="DetailsButton" Grid.Column="2" Content="Detalhes" Padding="8,3" FontSize="12.5" Background="Transparent" BorderThickness="0" Foreground="{ThemeResource AccentInkBrush}">
+            <Button.Flyout>
+                <Flyout>
+                    <ScrollViewer MaxHeight="360" MaxWidth="560">
+                        <TextBlock x:Name="Details" Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                    </ScrollViewer>
+                </Flyout>
+            </Button.Flyout>
+        </Button>
+        <Button Grid.Column="3" Background="Transparent" BorderThickness="0" Padding="6" Click="OnClose" ToolTipService.ToolTip="Fechar">
+            <FontIcon Glyph="&#xE711;" FontSize="10" Foreground="{ThemeResource MuteBrush}" />
+        </Button>
+    </Grid>
+</UserControl>

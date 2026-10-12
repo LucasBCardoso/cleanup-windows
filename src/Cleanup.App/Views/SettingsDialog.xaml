@@ -1,0 +1,53 @@
+<ContentDialog
+    x:Class="Cleanup.App.Views.SettingsDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Ajustes"
+    CloseButtonText="Fechar"
+    DefaultButton="Close">
+    <ScrollViewer MaxHeight="520">
+        <StackPanel Spacing="18" MinWidth="480">
+            <StackPanel Spacing="8">
+                <TextBlock Text="APARÊNCIA" Style="{StaticResource SectionLabelStyle}" />
+                <RadioButtons x:Name="ThemeChoice" SelectionChanged="OnThemeChanged">
+                    <x:String>Automático (segue o Windows)</x:String>
+                    <x:String>Daybreak (claro)</x:String>
+                    <x:String>Ledger (escuro)</x:String>
+                </RadioButtons>
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+                <TextBlock Text="PERMISSÕES" Style="{StaticResource SectionLabelStyle}" />
+                <Border Style="{StaticResource RowCardStyle}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Administrador (UAC)" Style="{StaticResource RowTitleStyle}" />
+                        <TextBlock Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap"
+                                   Text="O Cleanup roda como você. Limpar pastas do sistema (Windows\Temp, cache do Windows Update, relatórios de erro do sistema) ou rodar tarefas de manutenção pede permissão de administrador uma vez por ação; se você cancelar, nada do sistema é tocado." />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource RowCardStyle}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Acesso a pastas controlado" Style="{StaticResource RowTitleStyle}" />
+                        <TextBlock x:Name="CfaText" Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap" />
+                        <HyperlinkButton Content="Abrir Segurança do Windows" Padding="0" Click="OnOpenCfa" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+                <TextBlock Text="DADOS" Style="{StaticResource SectionLabelStyle}" />
+                <Border Style="{StaticResource RowCardStyle}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Pasta do Cleanup" Style="{StaticResource RowTitleStyle}" />
+                        <TextBlock x:Name="SupportPath" Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                        <TextBlock Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap"
+                                   Text="Histórico (cleanup-history.json), lista de ignorados (ignore.json) e regras próprias (rules.json, no mesmo formato do Cleanup para Mac)." />
+                        <HyperlinkButton Content="Abrir a pasta" Padding="0" Click="OnOpenSupport" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <TextBlock x:Name="Version" Style="{StaticResource CaptionTextStyle}" />
+        </StackPanel>
+    </ScrollViewer>
+</ContentDialog>

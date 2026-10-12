@@ -19,7 +19,8 @@ public static class DirectorySizer
         var options = new EnumerationOptions
         {
             IgnoreInaccessible = true, ReturnSpecialDirectories = false,
-            AttributesToSkip = includeHidden ? 0 : FileAttributes.Hidden | FileAttributes.System,
+            // Hidden alone is common on Windows (AppData); Hidden + System marks OS files and legacy junctions.
+            AttributesToSkip = includeHidden ? 0 : FileAttributes.System,
         };
         var children = new DirectoryInfo(directory).EnumerateFileSystemInfos("*", options).ToList();
         var entries = new DirectoryEntry[children.Count];
