@@ -66,6 +66,8 @@ public static class Elevation
         public const string Remove = "remove";
         public const string FlushDns = "flush-dns";
         public const string Run = "run";
+        /// <summary>Forget a saved Wi-Fi network: <c>Id</c> is the profile name; the helper keeps the network in use.</summary>
+        public const string WifiDelete = "wifi-delete";
     }
 
     /// <summary>
