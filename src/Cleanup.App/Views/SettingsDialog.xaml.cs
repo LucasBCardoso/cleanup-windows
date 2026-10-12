@@ -1,8 +1,8 @@
 using Cleanup.App.Services;
+using Cleanup.Core.AutoClean;
 using Cleanup.Core.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.Win32;
 
 namespace Cleanup.App.Views;
 
@@ -11,14 +11,35 @@ public sealed partial class SettingsDialog : ContentDialog
     private readonly AppSettings settings = AppServices.Shared.Settings;
     private bool loading = true;
 
+    /// <summary>True when "Rever introdução" was chosen: the window shows it once this dialog has closed.</summary>
+    public bool ReopenOnboarding { get; private set; }
+
     public SettingsDialog()
     {
         InitializeComponent();
         ThemeChoice.SelectedIndex = (int)settings.Theme;
+        TraySwitch.IsOn = settings.TrayEnabled;
+        NotificationsSwitch.IsOn = settings.NotificationsEnabled;
+        NotificationsSystemText.Text = Notifications.IsAllowedBySystem
+            ? "O Windows permite as notificações do Cleanup (Configurações › Sistema › Notificações)."
+            : "As notificações do Cleanup estão desativadas em Configurações › Sistema › Notificações.";
+        try { LoginSwitch.IsOn = LaunchAtLogin.IsEnabled; } catch (Exception e) when (e is UnauthorizedAccessException or IOException) { }
+        FrequencyBox.SelectedIndex = (int)settings.AutoClean.Frequency;
+        ModeBox.SelectedIndex = (int)settings.AutoClean.Mode;
         SupportPath.Text = AppPaths.SupportDirectory;
-        CfaText.Text = ControlledFolderAccessText();
+        CfaText.Text = SystemInfo.ControlledFolderAccessText();
         Version.Text = $"Cleanup para Windows {typeof(App).Assembly.GetName().Version?.ToString(3)} · convertido do Cleanup para Mac";
+        UpdateAutoCleanTexts();
         loading = false;
+    }
+
+    private void UpdateAutoCleanTexts()
+    {
+        var auto = AppViewModels.AutoClean;
+        auto?.UpdateTexts();
+        LastRunText.Text = auto?.LastRunText ?? "";
+        NextRunText.Text = auto?.NextRunText ?? "";
+        RunNowText.Text = settings.AutoClean.Mode == AutoCleanMode.Clean ? "Limpar agora" : "Verificar agora";
     }
 
     private void OnThemeChanged(object sender, SelectionChangedEventArgs e)
@@ -27,28 +48,55 @@ public sealed partial class SettingsDialog : ContentDialog
         settings.Theme = (Services.ThemeChoice)ThemeChoice.SelectedIndex;
         settings.Save();
         App.Window?.ApplyTheme(settings.Theme);
-        RequestedTheme = settings.Theme switch
-        {
-            Services.ThemeChoice.Daybreak => ElementTheme.Light,
-            Services.ThemeChoice.Ledger => ElementTheme.Dark,
-            _ => ElementTheme.Default,
-        };
+        RequestedTheme = App.Window?.CurrentTheme ?? ElementTheme.Default;
     }
 
-    /// <summary>Controlled Folder Access can make Windows refuse moves out of protected folders; we report it, never bypass it.</summary>
-    private static string ControlledFolderAccessText()
+    private void OnTrayToggled(object sender, RoutedEventArgs e)
     {
-        try
+        if (loading) return;
+        settings.TrayEnabled = TraySwitch.IsOn;
+        settings.Save();
+        App.EnableTray(TraySwitch.IsOn);
+    }
+
+    private void OnNotificationsToggled(object sender, RoutedEventArgs e)
+    {
+        if (loading) return;
+        settings.NotificationsEnabled = NotificationsSwitch.IsOn;
+        settings.Save();
+    }
+
+    private void OnLoginToggled(object sender, RoutedEventArgs e)
+    {
+        if (loading) return;
+        try { LaunchAtLogin.Set(LoginSwitch.IsOn); }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException) { Log.Write("login: " + ex.Message); }
+    }
+
+    private void OnAutoCleanChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (loading || FrequencyBox.SelectedIndex < 0 || ModeBox.SelectedIndex < 0) return;
+        var updated = settings.AutoClean with
         {
-            using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows Defender\Windows Defender Exploit Guard\Controlled Folder Access");
-            var on = key?.GetValue("EnableControlledFolderAccess") is int v && v == 1;
-            return on
-                ? "Ativado. O Windows pode bloquear o Cleanup em Documentos, Imagens e outras pastas protegidas; permita o Cleanup na Segurança do Windows se isso acontecer."
-                : "Desativado. O Cleanup pode mover itens das suas pastas para a Lixeira normalmente.";
-        }
-        catch (Exception e) when (e is System.Security.SecurityException or UnauthorizedAccessException or IOException)
+            Frequency = (AutoCleanFrequency)FrequencyBox.SelectedIndex,
+            Mode = (AutoCleanMode)ModeBox.SelectedIndex,
+        };
+        if (AppViewModels.AutoClean is { } auto) auto.Settings = updated;
+        else { settings.AutoClean = updated; settings.Save(); }
+        UpdateAutoCleanTexts();
+    }
+
+    private async void OnRunNow(object sender, RoutedEventArgs e)
+    {
+        if (AppViewModels.AutoClean is not { IsRunning: false } auto) return;
+        RunNowButton.IsEnabled = false;
+        RunNowRing.IsActive = true;
+        try { await auto.RunAsync(settings.AutoClean with { MinimumBytes = 0 }); }
+        finally
         {
-            return "Não foi possível ler o estado. Se o Windows bloquear o Cleanup, permita-o na Segurança do Windows.";
+            RunNowRing.IsActive = false;
+            RunNowButton.IsEnabled = true;
+            UpdateAutoCleanTexts();
         }
     }
 
@@ -58,5 +106,11 @@ public sealed partial class SettingsDialog : ContentDialog
     {
         Directory.CreateDirectory(AppPaths.SupportDirectory);
         AppServices.Open(AppPaths.SupportDirectory);
+    }
+
+    private void OnOnboarding(object sender, RoutedEventArgs e)
+    {
+        ReopenOnboarding = true;
+        Hide();
     }
 }

@@ -137,11 +137,12 @@
                         <Border Style="{StaticResource CardStyle}">
                             <StackPanel Spacing="6">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <FontIcon Glyph="&#xE8A5;" FontSize="14" Foreground="{ThemeResource AccentInkBrush}" />
-                                    <TextBlock Text="Arquivos grandes" Style="{StaticResource RowTitleStyle}" />
+                                    <FontIcon Glyph="&#xE95E;" FontSize="14" Foreground="{ThemeResource AccentInkBrush}" />
+                                    <TextBlock Text="Saúde" Style="{StaticResource RowTitleStyle}" />
                                 </StackPanel>
-                                <TextBlock Text="Vídeos, imagens de disco e instaladores esquecidos na sua pasta pessoal." Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap" />
-                                <HyperlinkButton Content="Procurar" Padding="0" Margin="0,4,0,0" Click="OnLargeFiles" />
+                                <TextBlock Text="{x:Bind HealthHeadline(Health.Summary), Mode=OneWay}" Style="{StaticResource DisplayTextStyle}" FontSize="20" TextWrapping="Wrap" />
+                                <TextBlock Text="{x:Bind HealthLine(Health.CpuText, Health.PressureText, Health.BatteryText), Mode=OneWay}" Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap" />
+                                <HyperlinkButton Content="Ver alertas e leituras" Padding="0" Margin="0,4,0,0" Click="OnHealth" />
                             </StackPanel>
                         </Border>
                         <Border Grid.Column="1" Style="{StaticResource CardStyle}">

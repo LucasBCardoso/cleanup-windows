@@ -1,0 +1,79 @@
+<ContentDialog
+    x:Class="Cleanup.App.Views.OnboardingDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    PrimaryButtonText="Começar"
+    CloseButtonText="Pular"
+    DefaultButton="Primary">
+    <!-- First launch (macOS Phase 8): welcome → access → alerts → automatic cleaning → done. Reopened from Ajustes. -->
+    <Grid Width="500" MinHeight="330" RowSpacing="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Spacing="6" x:Name="Dots">
+            <Rectangle Height="8" RadiusX="4" RadiusY="4" Fill="{ThemeResource AccentBrush}" />
+            <Rectangle Height="8" RadiusX="4" RadiusY="4" Fill="{ThemeResource AccentBrush}" />
+            <Rectangle Height="8" RadiusX="4" RadiusY="4" Fill="{ThemeResource AccentBrush}" />
+            <Rectangle Height="8" RadiusX="4" RadiusY="4" Fill="{ThemeResource AccentBrush}" />
+            <Rectangle Height="8" RadiusX="4" RadiusY="4" Fill="{ThemeResource AccentBrush}" />
+        </StackPanel>
+
+        <!-- 1. Welcome -->
+        <StackPanel x:Name="Step0" Grid.Row="1" Spacing="12">
+            <TextBlock Text="&#x2726;" FontFamily="Segoe UI Symbol" FontSize="44" Foreground="{ThemeResource AccentBrush}" />
+            <TextBlock Text="Bem-vindo ao Cleanup" Style="{StaticResource ModuleTitleStyle}" />
+            <TextBlock Style="{StaticResource BodyTextStyle}"
+                       Text="O Cleanup encontra temporários, caches e outros arquivos que dá para remover com segurança, mostra o que ocupa espaço e cuida da saúde do PC. Nada é removido sem você ver, e o que vai para a Lixeira pode voltar." />
+            <TextBlock Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap" Text="Leva menos de um minuto para deixar tudo pronto." />
+        </StackPanel>
+
+        <!-- 2. Access -->
+        <StackPanel x:Name="Step1" Grid.Row="1" Spacing="12" Visibility="Collapsed">
+            <TextBlock Text="Acesso a pastas" Style="{StaticResource ModuleTitleStyle}" />
+            <TextBlock Style="{StaticResource BodyTextStyle}"
+                       Text="O Cleanup roda como você e só lê o que a sua conta já pode ler. Limpar pastas do sistema (Windows\Temp, cache do Windows Update) pede permissão de administrador uma vez por limpeza; se você cancelar, nada do sistema é tocado." />
+            <Border Style="{StaticResource RowCardStyle}">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Acesso a pastas controlado" Style="{StaticResource RowTitleStyle}" />
+                    <TextBlock x:Name="CfaText" Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap" />
+                    <HyperlinkButton Content="Abrir Segurança do Windows" Padding="0" Click="OnOpenCfa" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- 3. Alerts -->
+        <StackPanel x:Name="Step2" Grid.Row="1" Spacing="10" Visibility="Collapsed">
+            <TextBlock Text="Alertas" Style="{StaticResource ModuleTitleStyle}" />
+            <TextBlock Style="{StaticResource BodyTextStyle}"
+                       Text="O Cleanup avisa quando o disco está quase cheio, a memória está sob pressão, um app usa CPU demais por muito tempo ou a Lixeira está grande. No máximo um aviso a cada 6 horas por alerta." />
+            <ToggleSwitch x:Name="NotificationsSwitch" Header="Notificações" OnContent="Ligadas" OffContent="Desligadas" />
+            <ToggleSwitch x:Name="TraySwitch" Header="Ícone na bandeja (continua rodando ao fechar a janela)" OnContent="Ligado" OffContent="Desligado" />
+            <ToggleSwitch x:Name="LoginSwitch" Header="Iniciar com o Windows (só na bandeja)" OnContent="Ligado" OffContent="Desligado" />
+        </StackPanel>
+
+        <!-- 4. Automatic cleaning -->
+        <StackPanel x:Name="Step3" Grid.Row="1" Spacing="10" Visibility="Collapsed">
+            <TextBlock Text="Limpeza automática" Style="{StaticResource ModuleTitleStyle}" />
+            <TextBlock Style="{StaticResource BodyTextStyle}"
+                       Text="De tempos em tempos, o Cleanup verifica o que dá para liberar. Só itens seguros, nunca nada que peça permissão de administrador, e nunca com a bateria baixa." />
+            <RadioButtons x:Name="FrequencyChoice" Header="Frequência">
+                <x:String>Desligada</x:String>
+                <x:String>Todo dia</x:String>
+                <x:String>Toda semana</x:String>
+            </RadioButtons>
+            <RadioButtons x:Name="ModeChoice" Header="O que fazer">
+                <x:String>Só avisar quanto dá para liberar</x:String>
+                <x:String>Limpar o que é seguro (vai para a Lixeira, dá para desfazer)</x:String>
+            </RadioButtons>
+        </StackPanel>
+
+        <!-- 5. Done -->
+        <StackPanel x:Name="Step4" Grid.Row="1" Spacing="12" Visibility="Collapsed">
+            <FontIcon Glyph="&#xE73E;" FontSize="40" Foreground="{ThemeResource OkBrush}" HorizontalAlignment="Left" />
+            <TextBlock Text="Tudo pronto" Style="{StaticResource ModuleTitleStyle}" />
+            <TextBlock Style="{StaticResource BodyTextStyle}"
+                       Text="Faça a primeira verificação para ver quanto dá para liberar. Você pode mudar tudo isso depois em Ajustes, e rever esta introdução por lá." />
+        </StackPanel>
+    </Grid>
+</ContentDialog>

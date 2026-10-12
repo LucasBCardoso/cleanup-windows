@@ -86,34 +86,6 @@ public sealed class AppServices
     }
 }
 
-public enum ThemeChoice { Auto, Daybreak, Ledger }
-
-/// <summary>App preferences, in <c>%LOCALAPPDATA%\Cleanup\settings.json</c>.</summary>
-public sealed class AppSettings
-{
-    public ThemeChoice Theme { get; set; } = ThemeChoice.Auto;
-    public string? LastModule { get; set; }
-
-    private static string FilePath => Path.Combine(AppPaths.SupportDirectory, "settings.json");
-    private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
-
-    public static AppSettings Load()
-    {
-        try { return File.Exists(FilePath) ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath)) ?? new() : new(); }
-        catch (Exception e) when (e is JsonException or IOException or UnauthorizedAccessException) { return new(); }
-    }
-
-    public void Save()
-    {
-        try
-        {
-            Directory.CreateDirectory(AppPaths.SupportDirectory);
-            AtomicFile.WriteAllText(FilePath, JsonSerializer.Serialize(this, Json));
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Log.Write("settings: " + e.Message); }
-    }
-}
-
 public static class Log
 {
     private static readonly object Gate = new();

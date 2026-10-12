@@ -37,12 +37,21 @@ public sealed partial class MainWindow : Window
         BuildTabs();
         var start = Enum.TryParse<Module>(settings.LastModule, out var saved) ? saved : Module.Home;
         Navigate(start);
-        Closed += (_, _) =>
+        // With the tray on, closing the window hides it: alerts and automatic cleaning keep running.
+        AppWindow.Closing += (_, e) =>
         {
             settings.LastModule = CurrentModule.ToString();
             settings.Save();
+            if (!App.IsExiting && App.HasTray)
+            {
+                e.Cancel = true;
+                AppWindow.Hide();
+            }
         };
+        Closed += (_, _) => { if (!App.IsExiting) App.Quit(); };
     }
+
+    public ElementTheme CurrentTheme => RootGrid.ActualTheme;
 
     public void ApplyTheme(ThemeChoice choice)
     {
@@ -53,6 +62,7 @@ public sealed partial class MainWindow : Window
             _ => ElementTheme.Default,
         };
         UpdateCaptionButtons();
+        App.Panel?.ApplyTheme(RootGrid.ActualTheme);
     }
 
     private void UpdateCaptionButtons()
@@ -196,6 +206,36 @@ public sealed partial class MainWindow : Window
     {
         var dialog = new SettingsDialog { XamlRoot = RootGrid.XamlRoot, RequestedTheme = RootGrid.ActualTheme };
         await dialog.ShowAsync();
+        if (dialog.ReopenOnboarding) await ShowOnboardingAsync();
+    }
+
+    /// <summary>First launch: the introduction opens once the window has its XAML root.</summary>
+    public void ShowOnboardingWhenReady()
+    {
+        if (RootGrid.XamlRoot is not null) { _ = ShowOnboardingAsync(); return; }
+        RootGrid.Loaded += OnFirstLoaded;
+
+        void OnFirstLoaded(object sender, RoutedEventArgs e)
+        {
+            RootGrid.Loaded -= OnFirstLoaded;
+            _ = ShowOnboardingAsync();
+        }
+    }
+
+    public async Task ShowOnboardingAsync()
+    {
+        // Nothing runs in the background while the introduction is open.
+        if (AppViewModels.AutoClean is { } auto) auto.IsSuspended = true;
+        try
+        {
+            var dialog = new OnboardingDialog { XamlRoot = RootGrid.XamlRoot, RequestedTheme = RootGrid.ActualTheme };
+            await dialog.ShowAsync();
+            if (dialog.StartScan) FollowLink("cleanup://scan");
+        }
+        finally
+        {
+            if (AppViewModels.AutoClean is { } a) a.IsSuspended = false;
+        }
     }
 }
 
@@ -206,4 +246,7 @@ public static class AppViewModels
     public static LargeFilesViewModel LargeFiles { get; } = new();
     public static SpaceLensViewModel SpaceLens { get; } = new();
     public static HistoryViewModel History { get; } = new();
+    /// <summary>Created at launch (they need the UI dispatcher).</summary>
+    public static HealthViewModel? Health { get; set; }
+    public static AutoCleanViewModel? AutoClean { get; set; }
 }

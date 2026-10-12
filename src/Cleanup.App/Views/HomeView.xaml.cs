@@ -12,6 +12,7 @@ public sealed partial class HomeView : UserControl
 {
     public ScanViewModel Scan => AppViewModels.Scan;
     public HistoryViewModel History => AppViewModels.History;
+    public HealthViewModel Health => AppViewModels.Health!;
 
     public HomeView()
     {
@@ -77,7 +78,11 @@ public sealed partial class HomeView : UserControl
 
     private void OnDetails(object sender, RoutedEventArgs e) => App.Window?.Navigate(Module.SmartScan);
     private void OnSpaceLens(object sender, RoutedEventArgs e) => App.Window?.Navigate(Module.SpaceLens);
-    private void OnLargeFiles(object sender, RoutedEventArgs e) => App.Window?.Navigate(Module.LargeFiles);
+    private void OnHealth(object sender, RoutedEventArgs e) => App.ShowHealthPanel();
+
+    public string HealthHeadline(string summary) => summary;
+    public string HealthLine(string cpu, string pressure, string battery) =>
+        string.Join(" · ", new[] { cpu == "—" ? "" : $"CPU {cpu}", pressure.Length > 0 ? $"memória {pressure}" : "", battery.Length > 0 ? $"bateria {battery}" : "" }.Where(s => s.Length > 0));
     private void OnOptimization(object sender, RoutedEventArgs e) => App.Window?.Navigate(Module.Optimization);
     private void OnOpenBin(object sender, RoutedEventArgs e) => AppServices.Open("shell:RecycleBinFolder");
     private async void OnHistory(object sender, RoutedEventArgs e) { if (App.Window is { } w) await w.ShowHistoryAsync(); }

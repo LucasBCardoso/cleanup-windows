@@ -5,8 +5,8 @@
     Title="Ajustes"
     CloseButtonText="Fechar"
     DefaultButton="Close">
-    <ScrollViewer MaxHeight="520">
-        <StackPanel Spacing="18" MinWidth="480">
+    <ScrollViewer MaxHeight="560" Padding="0,0,14,0">
+        <StackPanel Spacing="20" Width="500">
             <StackPanel Spacing="8">
                 <TextBlock Text="APARÊNCIA" Style="{StaticResource SectionLabelStyle}" />
                 <RadioButtons x:Name="ThemeChoice" SelectionChanged="OnThemeChanged">
@@ -14,6 +14,45 @@
                     <x:String>Daybreak (claro)</x:String>
                     <x:String>Ledger (escuro)</x:String>
                 </RadioButtons>
+            </StackPanel>
+
+            <StackPanel Spacing="6">
+                <TextBlock Text="BANDEJA E ALERTAS" Style="{StaticResource SectionLabelStyle}" />
+                <ToggleSwitch x:Name="TraySwitch" Header="Ícone na bandeja (continua rodando ao fechar a janela)" Toggled="OnTrayToggled" />
+                <ToggleSwitch x:Name="NotificationsSwitch" Header="Notificações de saúde e da limpeza automática" Toggled="OnNotificationsToggled" />
+                <TextBlock x:Name="NotificationsSystemText" Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap" />
+                <ToggleSwitch x:Name="LoginSwitch" Header="Iniciar com o Windows (só na bandeja)" Toggled="OnLoginToggled" />
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+                <TextBlock Text="LIMPEZA AUTOMÁTICA" Style="{StaticResource SectionLabelStyle}" />
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <ComboBox x:Name="FrequencyBox" Header="Frequência" HorizontalAlignment="Stretch" SelectionChanged="OnAutoCleanChanged">
+                        <x:String>Desligada</x:String>
+                        <x:String>Todo dia</x:String>
+                        <x:String>Toda semana</x:String>
+                    </ComboBox>
+                    <ComboBox x:Name="ModeBox" Grid.Column="1" Header="O que fazer" HorizontalAlignment="Stretch" SelectionChanged="OnAutoCleanChanged">
+                        <x:String>Só avisar</x:String>
+                        <x:String>Limpar o que é seguro</x:String>
+                    </ComboBox>
+                </Grid>
+                <TextBlock Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap"
+                           Text="Só itens seguros acima de 200 MB, nunca nada que peça administrador; pulada com a bateria abaixo de 20% e enquanto você verifica ou limpa. O que vai para a Lixeira pode voltar pelo Histórico." />
+                <TextBlock x:Name="LastRunText" Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap" />
+                <TextBlock x:Name="NextRunText" Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="RunNowButton" Style="{StaticResource SubtleButtonStyle}" Click="OnRunNow">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ProgressRing x:Name="RunNowRing" Width="14" Height="14" IsActive="False" />
+                            <TextBlock x:Name="RunNowText" Text="Verificar agora" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
             </StackPanel>
 
             <StackPanel Spacing="8">
@@ -47,6 +86,9 @@
                 </Border>
             </StackPanel>
 
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <HyperlinkButton Content="Rever introdução" Padding="0" Click="OnOnboarding" />
+            </StackPanel>
             <TextBlock x:Name="Version" Style="{StaticResource CaptionTextStyle}" />
         </StackPanel>
     </ScrollViewer>

@@ -27,6 +27,7 @@ public static class Program
         }
         main.Activated += (_, e) => App.Window?.DispatcherQueue.TryEnqueue(() => App.Window.FollowLink(LinkFrom(e)));
         App.PendingLink = args.FirstOrDefault(a => a.StartsWith("cleanup:", StringComparison.OrdinalIgnoreCase));
+        App.StartInBackground = args.Contains(LaunchAtLogin.BackgroundArgument);
         if (string.IsNullOrEmpty(instance)) ProtocolRegistration.EnsureRegistered();
 
         Application.Start(_p =>
