@@ -18,6 +18,7 @@ public static class ModuleRegistry
         Module.Maintenance => new MaintenanceView(),
         Module.Duplicates => new DuplicatesView(),
         Module.Developer => new DeveloperView(),
+        Module.Uninstaller => new UninstallerView(),
         _ => null,
     };
 }
