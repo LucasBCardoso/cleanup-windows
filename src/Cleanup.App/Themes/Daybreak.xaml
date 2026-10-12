@@ -1,0 +1,28 @@
+<!-- Daybreak (light, default). Every color is shared/design-tokens.json themes.daybreak; DesignTokensTests keeps them in step.
+     Key = token name in PascalCase + "Color". Opacity is the alpha byte (#AARRGGBB). -->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Color x:Key="CanvasColor">#FFF2F4F1</Color>
+    <Color x:Key="SurfaceColor">#FFFFFFFF</Color>
+    <Color x:Key="SurfaceSoftColor">#FFE8ECE6</Color>
+    <Color x:Key="HairlineColor">#FFDCE1D8</Color>
+    <Color x:Key="InkColor">#FF131613</Color>
+    <Color x:Key="BodyColor">#FF3E443F</Color>
+    <Color x:Key="MuteColor">#FF6A716B</Color>
+    <Color x:Key="AccentColor">#FFE8481F</Color>
+    <Color x:Key="AccentSoftColor">#FFFDE7DE</Color>
+    <Color x:Key="AccentInkColor">#FFB53412</Color>
+    <Color x:Key="OnAccentColor">#FF160803</Color>
+    <Color x:Key="AccentStartColor">#FFEA3F2C</Color>
+    <Color x:Key="AccentEndColor">#FFFF8A1F</Color>
+    <Color x:Key="HeroBackgroundColor">#FFEA3F2C</Color>
+    <Color x:Key="HeroForegroundColor">#FF160803</Color>
+    <Color x:Key="HeroAmountColor">#FF160803</Color>
+    <Color x:Key="HeroButtonColor">#FF160803</Color>
+    <Color x:Key="HeroButtonTextColor">#FFFFFFFF</Color>
+    <Color x:Key="OkColor">#FF137A43</Color>
+    <Color x:Key="WarnColor">#FF8A5A00</Color>
+    <Color x:Key="WarnSoftColor">#FFFBF0D9</Color>
+    <Color x:Key="DangerColor">#FFD23A3A</Color>
+</ResourceDictionary>

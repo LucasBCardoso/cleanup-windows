@@ -1,0 +1,62 @@
+{
+  "description": "Cleanup design tokens v2. Two themes share one semantic vocabulary: Daybreak (light, default) and Ledger (dark). Both use the same red → orange accent gradient (accentStart → accentEnd) for filled controls; accent / accentInk are solid tints tuned per theme for contrast. Colors are sRGB hex; opacity is 0-1. The app icon is monochrome (black sparkles on white in Daybreak, white on black in Ledger); the icon* brand colors are kept for reference only. Sizes are points (macOS) / effective pixels (Windows).",
+  "fonts": { "display": "Bricolage Grotesque", "text": "Onest" },
+  "themes": {
+    "daybreak": {
+      "canvas": { "hex": "#F2F4F1" },
+      "surface": { "hex": "#FFFFFF" },
+      "surfaceSoft": { "hex": "#E8ECE6" },
+      "hairline": { "hex": "#DCE1D8" },
+      "ink": { "hex": "#131613" },
+      "body": { "hex": "#3E443F" },
+      "mute": { "hex": "#6A716B" },
+      "accent": { "hex": "#E8481F" },
+      "accentSoft": { "hex": "#FDE7DE" },
+      "accentInk": { "hex": "#B53412" },
+      "onAccent": { "hex": "#160803" },
+      "accentStart": { "hex": "#EA3F2C" },
+      "accentEnd": { "hex": "#FF8A1F" },
+      "heroBackground": { "hex": "#EA3F2C" },
+      "heroForeground": { "hex": "#160803" },
+      "heroAmount": { "hex": "#160803" },
+      "heroButton": { "hex": "#160803" },
+      "heroButtonText": { "hex": "#FFFFFF" },
+      "ok": { "hex": "#137A43" },
+      "warn": { "hex": "#8A5A00" },
+      "warnSoft": { "hex": "#FBF0D9" },
+      "danger": { "hex": "#D23A3A" }
+    },
+    "ledger": {
+      "canvas": { "hex": "#0C0E11" },
+      "surface": { "hex": "#12151A" },
+      "surfaceSoft": { "hex": "#1E232A" },
+      "hairline": { "hex": "#232830" },
+      "ink": { "hex": "#EDEFF2" },
+      "body": { "hex": "#C3C8D0" },
+      "mute": { "hex": "#858C97" },
+      "accent": { "hex": "#FF6A2B" },
+      "accentSoft": { "hex": "#FF6A2B", "opacity": 0.14 },
+      "accentInk": { "hex": "#FF8A55" },
+      "onAccent": { "hex": "#160803" },
+      "accentStart": { "hex": "#EA3F2C" },
+      "accentEnd": { "hex": "#FF8A1F" },
+      "heroBackground": { "hex": "#171B21" },
+      "heroForeground": { "hex": "#EDEFF2" },
+      "heroAmount": { "hex": "#FF7A3D" },
+      "heroButton": { "hex": "#FF6A2B" },
+      "heroButtonText": { "hex": "#160803" },
+      "ok": { "hex": "#6BD49A" },
+      "warn": { "hex": "#F2C14E" },
+      "warnSoft": { "hex": "#F2C14E", "opacity": 0.14 },
+      "danger": { "hex": "#FF6B6B" }
+    }
+  },
+  "brand": {
+    "iconStart": { "hex": "#5A80FF" },
+    "iconMid": { "hex": "#2D5BFF" },
+    "iconEnd": { "hex": "#1E42D6" },
+    "iconSpark": { "hex": "#D4FF3A" }
+  },
+  "radii": { "row": 12, "panel": 20, "hero": 28, "icon": 10, "checkbox": 6 },
+  "typeSizes": { "moduleTitle": 28, "rowTitle": 13.5, "caption": 12, "sectionLabel": 11, "button": 13.5, "number": 13 }
+}

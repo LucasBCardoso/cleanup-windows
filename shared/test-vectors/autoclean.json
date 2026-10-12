@@ -1,0 +1,33 @@
+{
+  "description": "Automatic cleaning (AutoCleanSettings, AutoCleanSchedule, AutoCleanPlanner). defaults: the settings used when none are saved or they are unreadable; minimumBytes is 200 MiB (200 * 1048576). isDue: frequency off -> never due; no lastRun -> due; lastRun after now (clock moved back) -> due; otherwise due when now - lastRun >= interval (daily 86400 s, weekly 604800 s). nextRun: lastRun + interval, or null when frequency is off or there is no lastRun. skip: a due run waits (expected true) only when there is a battery, it is neither charging nor on power, and chargePercent < 20; battery null = desktop, never skipped. plan: from each report keep the items with risk safe and requiresAdmin false (review and admin items are never auto-cleaned); totalBytes is their summed size (reported even when below the minimum); if totalBytes < minimumBytes or totalBytes == 0 the plan has no items and no topGroups; otherwise items keep report order then item order, and topGroups are the titles of reports with kept items, sorted by their kept bytes descending, at most 3. paths are opaque ids. Dates are ISO-8601 UTC.",
+  "defaults": {"frequency": "off", "mode": "notify", "minimumBytes": 209715200, "minimumBatteryPercent": 20},
+  "isDue": [
+    {"frequency": "off", "lastRun": null, "now": "2027-01-15T08:00:00Z", "expected": false},
+    {"frequency": "daily", "lastRun": null, "now": "2027-01-15T08:00:00Z", "expected": true},
+    {"frequency": "daily", "lastRun": "2027-01-14T08:01:00Z", "now": "2027-01-15T08:00:00Z", "expected": false},
+    {"frequency": "daily", "lastRun": "2027-01-14T08:00:00Z", "now": "2027-01-15T08:00:00Z", "expected": true},
+    {"frequency": "weekly", "lastRun": "2027-01-09T08:00:00Z", "now": "2027-01-15T08:00:00Z", "expected": false},
+    {"frequency": "weekly", "lastRun": "2027-01-08T08:00:00Z", "now": "2027-01-15T08:00:00Z", "expected": true},
+    {"frequency": "weekly", "lastRun": "2027-01-18T08:00:00Z", "now": "2027-01-15T08:00:00Z", "expected": true}
+  ],
+  "nextRun": [
+    {"frequency": "weekly", "lastRun": "2027-01-15T08:00:00Z", "expected": "2027-01-22T08:00:00Z"},
+    {"frequency": "off", "lastRun": "2027-01-15T08:00:00Z", "expected": null}
+  ],
+  "skip": [
+    {"battery": {"chargePercent": 15, "isCharging": false, "onPower": false}, "expected": true},
+    {"battery": {"chargePercent": 10, "isCharging": true, "onPower": true}, "expected": false},
+    {"battery": {"chargePercent": 80, "isCharging": false, "onPower": false}, "expected": false},
+    {"battery": null, "expected": false},
+    {"battery": {"chargePercent": 19, "isCharging": false, "onPower": false}, "expected": true},
+    {"battery": {"chargePercent": 20, "isCharging": false, "onPower": false}, "expected": false},
+    {"battery": {"chargePercent": 10, "isCharging": false, "onPower": true}, "expected": false}
+  ],
+  "plan": [
+    {"name": "only safe, non-admin items", "reports": [{"title": "Caches", "items": [{"path": "/u/Library/Caches/a", "size": 300, "risk": "safe", "requiresAdmin": false}, {"path": "/u/Library/Caches/b", "size": 900, "risk": "review", "requiresAdmin": false}, {"path": "/Library/Caches/x", "size": 900, "risk": "safe", "requiresAdmin": true}]}, {"title": "Logs", "items": [{"path": "/u/Library/Logs/l", "size": 100, "risk": "safe", "requiresAdmin": false}]}], "minimumBytes": 200, "expected": {"items": ["/u/Library/Caches/a", "/u/Library/Logs/l"], "totalBytes": 400, "topGroups": ["Caches", "Logs"]}},
+    {"name": "below the minimum", "reports": [{"title": "Caches", "items": [{"path": "/u/Library/Caches/a", "size": 300, "risk": "safe", "requiresAdmin": false}, {"path": "/u/Library/Caches/b", "size": 900, "risk": "review", "requiresAdmin": false}, {"path": "/Library/Caches/x", "size": 900, "risk": "safe", "requiresAdmin": true}]}, {"title": "Logs", "items": [{"path": "/u/Library/Logs/l", "size": 100, "risk": "safe", "requiresAdmin": false}]}], "minimumBytes": 401, "expected": {"items": [], "totalBytes": 400, "topGroups": []}},
+    {"name": "one group above the minimum", "reports": [{"title": "Caches", "items": [{"path": "/u/Library/Caches/a", "size": 500, "risk": "safe", "requiresAdmin": false}]}], "minimumBytes": 100, "expected": {"items": ["/u/Library/Caches/a"], "totalBytes": 500, "topGroups": ["Caches"]}},
+    {"name": "one group below the minimum", "reports": [{"title": "Caches", "items": [{"path": "/u/Library/Caches/a", "size": 500, "risk": "safe", "requiresAdmin": false}]}], "minimumBytes": 10000, "expected": {"items": [], "totalBytes": 500, "topGroups": []}},
+    {"name": "nothing found", "reports": [], "minimumBytes": 0, "expected": {"items": [], "totalBytes": 0, "topGroups": []}}
+  ]
+}

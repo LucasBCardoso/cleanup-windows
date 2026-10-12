@@ -1,0 +1,11 @@
+{
+  "description": "Disk space breakdown (DiskSpace). Inputs, in bytes: total capacity, available (plainly free) and importantAvailable (free for important usage, which includes space the OS can reclaim on its own). purgeable = max(0, importantAvailable - available); used = max(0, total - max(importantAvailable, available)). free = available (what the app shows as 'Livre').",
+  "cases": [
+    { "total": 494384795648, "available": 123233419264, "importantAvailable": 128459013821,
+      "free": 123233419264, "purgeable": 5225594557, "used": 365925781827 },
+    { "total": 100, "available": 50, "importantAvailable": 40, "free": 50, "purgeable": 0, "used": 50 },
+    { "total": 100, "available": 40, "importantAvailable": 50, "free": 40, "purgeable": 10, "used": 50 },
+    { "total": 100, "available": 30, "importantAvailable": 30, "free": 30, "purgeable": 0, "used": 70 },
+    { "total": 10, "available": 20, "importantAvailable": 5, "free": 20, "purgeable": 0, "used": 0 }
+  ]
+}

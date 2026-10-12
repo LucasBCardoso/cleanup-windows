@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Recycle Bin, registry, MSIX, winget/Store, Authenticode, PDH/WMI, startup items, elevation client. -->
+  <PropertyGroup>
+    <TargetFramework>$(WindowsTarget)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Cleanup.Core\Cleanup.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cleanup.Platform.Tests" />
+  </ItemGroup>
+</Project>

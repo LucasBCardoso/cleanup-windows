@@ -1,0 +1,15 @@
+{
+  "description": "List search. The query is split on whitespace into words; an empty or whitespace-only query matches everything (even with no fields). Otherwise EVERY word must appear as a substring of AT LEAST ONE field (words may match different fields). Query and fields are compared ignoring case and diacritics (accents and cedilla folded, e.g. 'ção' == 'cao'). Swift: SearchFilter.matches(query, fields), folding with String.folding([.caseInsensitive, .diacriticInsensitive], locale pt_BR).",
+  "cases": [
+    { "query": "", "fields": ["Anything"], "expected": true },
+    { "query": "   ", "fields": ["Anything"], "expected": true },
+    { "query": "", "fields": [], "expected": true },
+    { "query": "a", "fields": [], "expected": false },
+    { "query": "extensoes", "fields": ["Extensões do Safari"], "expected": true },
+    { "query": "CHROME", "fields": ["Google Chrome"], "expected": true },
+    { "query": "ção", "fields": ["Configuracao"], "expected": true },
+    { "query": "code microsoft", "fields": ["Visual Studio Code", "com.microsoft.VSCode"], "expected": true },
+    { "query": "vis stu", "fields": ["Visual Studio Code", "com.microsoft.VSCode"], "expected": true },
+    { "query": "code xcode", "fields": ["Visual Studio Code", "com.microsoft.VSCode"], "expected": false }
+  ]
+}

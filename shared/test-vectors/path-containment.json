@@ -1,0 +1,12 @@
+{
+  "description": "Is `path` equal to `root` or inside it? Comparison is by path component, never by raw string prefix. Paths use '/'; the Windows implementation converts '\\' to '/' first and compares case-insensitively.",
+  "cases": [
+    { "path": "/a/b", "root": "/a/b", "expected": true },
+    { "path": "/a/b/c", "root": "/a/b", "expected": true },
+    { "path": "/a/b/c/d", "root": "/a/b/", "expected": true },
+    { "path": "/a/bc", "root": "/a/b", "expected": false },
+    { "path": "/a/b-old/c", "root": "/a/b", "expected": false },
+    { "path": "/a", "root": "/a/b", "expected": false },
+    { "path": "/x/a/b", "root": "/a/b", "expected": false }
+  ]
+}

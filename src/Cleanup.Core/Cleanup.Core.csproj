@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Rules, scan engine, safety, history, health, updater logic. No Windows APIs (design §4). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cleanup.Core.Tests" />
+  </ItemGroup>
+</Project>

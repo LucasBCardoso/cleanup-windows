@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- cleanup.exe: same commands and flags as the macOS CLI; a dry run unless "yes" is passed. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(WindowsTarget)</TargetFramework>
+    <AssemblyName>cleanup</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Cleanup.Core\Cleanup.Core.csproj" />
+    <ProjectReference Include="..\Cleanup.Platform.Windows\Cleanup.Platform.Windows.csproj" />
+  </ItemGroup>
+</Project>

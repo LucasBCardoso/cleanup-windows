@@ -1,0 +1,31 @@
+{
+  "description": "Version comparison cases. Both the Swift and the .NET implementations must pass every case. expected: ascending (lhs < rhs), same, descending (lhs > rhs).",
+  "compare": [
+    { "lhs": "1.10", "rhs": "1.9", "expected": "descending" },
+    { "lhs": "1.2", "rhs": "1.2.0", "expected": "same" },
+    { "lhs": "2.0-beta", "rhs": "2.0", "expected": "ascending" },
+    { "lhs": "2.0b3", "rhs": "2.0", "expected": "ascending" },
+    { "lhs": "2.0rc1", "rhs": "2.0beta2", "expected": "descending" },
+    { "lhs": "2.0alpha", "rhs": "2.0beta", "expected": "ascending" },
+    { "lhs": "2.0dev", "rhs": "2.0alpha", "expected": "ascending" },
+    { "lhs": "2.0.1", "rhs": "2.0b", "expected": "descending" },
+    { "lhs": "1.0.1", "rhs": "1.0", "expected": "descending" },
+    { "lhs": "10.0", "rhs": "9.99.99", "expected": "descending" },
+    { "lhs": "1.0", "rhs": "1.0", "expected": "same" },
+    { "lhs": "2025.2", "rhs": "2025.1.3", "expected": "descending" },
+    { "lhs": "V1.2", "rhs": "v1.2", "expected": "same" },
+    { "lhs": "1_2", "rhs": "1.2", "expected": "same" },
+    { "lhs": "1.2 (345)", "rhs": "1.2", "expected": "same" },
+    { "lhs": "2.5.1", "rhs": "2.5 (1203)", "expected": "descending" }
+  ],
+  "isNewer": [
+    { "candidate": "1.2 (346)", "installed": "1.2 (345)", "expected": true },
+    { "candidate": "1.2 (345)", "installed": "1.2", "installedBuild": "345", "expected": false },
+    { "candidate": "1.4", "candidateBuild": "141", "installed": "1.4", "installedBuild": "140", "expected": true },
+    { "candidate": "1.4", "candidateBuild": "140", "installed": "1.4", "installedBuild": "140", "expected": false },
+    { "candidate": "1.4", "installed": "1.4", "expected": false },
+    { "candidate": "1.5", "installed": "1.4", "installedBuild": "999", "expected": true },
+    { "candidate": "1.3", "candidateBuild": "999", "installed": "1.4", "installedBuild": "1", "expected": false },
+    { "candidate": "2.0", "installed": "2.0rc1", "expected": true }
+  ]
+}

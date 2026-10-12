@@ -1,0 +1,24 @@
+{
+  "description": "Select-all logic for a list. `ids` are the items currently listed (after search/filter); `selected` is the whole selection, which may hold ids not in the list (another tab, hidden by search). Arrays named selected/expected in `toggle` are SETS: order is irrelevant. state: counts only selected ids that are in `ids`; 'none' if ids is empty or none of them is selected, 'all' if every listed id is selected, else 'some'. toggle: if state is 'all', remove the listed ids from the selection; otherwise add all listed ids; ids outside the list are kept either way. bar: the selection strip; selectedCount = number of listed ids that are selected, total = number of listed ids, countLabel = '<selectedCount> de <total> selecionado' + ('' if total == 1 else 's') (plural follows total, not selectedCount). hiddenSelected is supplied by the caller (selected ids the search hides; the app computes it as |selected minus listed ids|); hiddenLabel = '+ <hiddenSelected> fora da busca' when hiddenSelected > 0, else null (not shown). Swift: SelectionState(selected:among:), SelectionState.toggled(_:among:), SelectionBar. The Swift test asserts state/toggle/selectedCount/total; the label strings mirror the SelectionBar view text and are for the .NET port.",
+  "state": [
+    { "selected": [], "ids": ["a", "b"], "expected": "none" },
+    { "selected": ["a"], "ids": ["a", "b"], "expected": "some" },
+    { "selected": ["a", "b", "x"], "ids": ["a", "b"], "expected": "all" },
+    { "selected": ["x"], "ids": ["a", "b"], "expected": "none" },
+    { "selected": [], "ids": [], "expected": "none" }
+  ],
+  "toggle": [
+    { "selected": ["a"], "ids": ["a", "b"], "expected": ["a", "b"] },
+    { "selected": [], "ids": ["a", "b"], "expected": ["a", "b"] },
+    { "selected": ["a", "b"], "ids": ["a", "b"], "expected": [] },
+    { "selected": ["a", "b", "x"], "ids": ["a", "b"], "expected": ["x"] },
+    { "selected": ["x"], "ids": ["a"], "expected": ["a", "x"] }
+  ],
+  "bar": [
+    { "selected": ["a"], "ids": ["a", "b"], "hiddenSelected": 0, "selectedCount": 1, "total": 2, "state": "some", "countLabel": "1 de 2 selecionados", "hiddenLabel": null },
+    { "selected": [], "ids": ["a"], "hiddenSelected": 0, "selectedCount": 0, "total": 1, "state": "none", "countLabel": "0 de 1 selecionado", "hiddenLabel": null },
+    { "selected": ["a"], "ids": ["a"], "hiddenSelected": 0, "selectedCount": 1, "total": 1, "state": "all", "countLabel": "1 de 1 selecionado", "hiddenLabel": null },
+    { "selected": [], "ids": [], "hiddenSelected": 0, "selectedCount": 0, "total": 0, "state": "none", "countLabel": "0 de 0 selecionados", "hiddenLabel": null },
+    { "selected": ["a", "x", "y"], "ids": ["a", "b", "c"], "hiddenSelected": 2, "selectedCount": 1, "total": 3, "state": "some", "countLabel": "1 de 3 selecionados", "hiddenLabel": "+ 2 fora da busca" }
+  ]
+}

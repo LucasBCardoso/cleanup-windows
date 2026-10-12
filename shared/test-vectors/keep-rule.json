@@ -1,0 +1,150 @@
+{
+  "description": "Duplicate keep rule: which copy of a duplicate group stays; every other copy is selected for removal. Rules: 'oldest' keeps the earliest creation date (a missing creation date counts as the far future), 'newest' keeps the latest creation date (a missing creation date counts as the far past; the modification date is ignored because Finder/Explorer copies keep it), 'outsideDownloads' keeps the oldest-created copy that is not inside <home>/Downloads (component-aware containment, see path-containment.json), falling back to the oldest of all copies when every copy is in Downloads. Ties on the date go to the shortest path, then ordinal (byte-wise) path order. 'keeper' cases: one group, expected keeper path and expected removal selection (all other paths). 'enforceKeepOne' cases: a hand-edited selection; for every group whose copies are ALL selected, that group's keeper (per rule) is unselected, so one copy per group always stays; everything else in the selection (including paths outside any group) is left as is. Dates are ISO-8601 UTC; null means unknown. Paths use '/'; 'home' is the user's home folder.",
+  "home": "/Users/me",
+  "keeper": [
+    {
+      "name": "oldest keeps the earliest created",
+      "rule": "oldest",
+      "files": [
+        { "path": "/Users/me/Downloads/movie.mov", "created": "2020-01-01T00:00:00Z", "modified": "2024-06-01T00:00:00Z" },
+        { "path": "/Users/me/Movies/movie.mov", "created": "2022-01-01T00:00:00Z", "modified": "2022-01-01T00:00:00Z" },
+        { "path": "/Users/me/Movies/Old/movie copy.mov", "created": "2021-01-01T00:00:00Z", "modified": "2021-01-01T00:00:00Z" }
+      ],
+      "keeper": "/Users/me/Downloads/movie.mov",
+      "selected": ["/Users/me/Movies/movie.mov", "/Users/me/Movies/Old/movie copy.mov"]
+    },
+    {
+      "name": "newest keeps the latest created, ignoring the modification date",
+      "rule": "newest",
+      "files": [
+        { "path": "/Users/me/Downloads/movie.mov", "created": "2020-01-01T00:00:00Z", "modified": "2024-06-01T00:00:00Z" },
+        { "path": "/Users/me/Movies/movie.mov", "created": "2022-01-01T00:00:00Z", "modified": "2022-01-01T00:00:00Z" },
+        { "path": "/Users/me/Movies/Old/movie copy.mov", "created": "2021-01-01T00:00:00Z", "modified": "2021-01-01T00:00:00Z" }
+      ],
+      "keeper": "/Users/me/Movies/movie.mov",
+      "selected": ["/Users/me/Downloads/movie.mov", "/Users/me/Movies/Old/movie copy.mov"]
+    },
+    {
+      "name": "outsideDownloads keeps the oldest copy outside Downloads",
+      "rule": "outsideDownloads",
+      "files": [
+        { "path": "/Users/me/Downloads/movie.mov", "created": "2020-01-01T00:00:00Z", "modified": "2024-06-01T00:00:00Z" },
+        { "path": "/Users/me/Movies/movie.mov", "created": "2022-01-01T00:00:00Z", "modified": "2022-01-01T00:00:00Z" },
+        { "path": "/Users/me/Movies/Old/movie copy.mov", "created": "2021-01-01T00:00:00Z", "modified": "2021-01-01T00:00:00Z" }
+      ],
+      "keeper": "/Users/me/Movies/Old/movie copy.mov",
+      "selected": ["/Users/me/Downloads/movie.mov", "/Users/me/Movies/movie.mov"]
+    },
+    {
+      "name": "outsideDownloads falls back to the oldest when every copy is in Downloads",
+      "rule": "outsideDownloads",
+      "files": [
+        { "path": "/Users/me/Downloads/a.zip", "created": "2021-01-01T00:00:00Z", "modified": "2021-01-01T00:00:00Z" },
+        { "path": "/Users/me/Downloads/sub/a.zip", "created": "2020-01-01T00:00:00Z", "modified": "2020-01-01T00:00:00Z" }
+      ],
+      "keeper": "/Users/me/Downloads/sub/a.zip",
+      "selected": ["/Users/me/Downloads/a.zip"]
+    },
+    {
+      "name": "outsideDownloads: a sibling folder whose name starts with Downloads is outside",
+      "rule": "outsideDownloads",
+      "files": [
+        { "path": "/Users/me/Downloads/a.zip", "created": "2020-01-01T00:00:00Z", "modified": "2020-01-01T00:00:00Z" },
+        { "path": "/Users/me/Downloads Old/a.zip", "created": "2021-01-01T00:00:00Z", "modified": "2021-01-01T00:00:00Z" }
+      ],
+      "keeper": "/Users/me/Downloads Old/a.zip",
+      "selected": ["/Users/me/Downloads/a.zip"]
+    },
+    {
+      "name": "oldest: date tie goes to the shortest path",
+      "rule": "oldest",
+      "files": [
+        { "path": "/a/very/long/path/x", "created": "2020-01-01T00:00:00Z", "modified": "2020-01-01T00:00:00Z" },
+        { "path": "/a/x", "created": "2020-01-01T00:00:00Z", "modified": "2020-01-01T00:00:00Z" }
+      ],
+      "keeper": "/a/x",
+      "selected": ["/a/very/long/path/x"]
+    },
+    {
+      "name": "newest: date tie goes to the shortest path",
+      "rule": "newest",
+      "files": [
+        { "path": "/a/very/long/path/x", "created": "2020-01-01T00:00:00Z", "modified": "2020-01-01T00:00:00Z" },
+        { "path": "/a/x", "created": "2020-01-01T00:00:00Z", "modified": "2020-01-01T00:00:00Z" }
+      ],
+      "keeper": "/a/x",
+      "selected": ["/a/very/long/path/x"]
+    },
+    {
+      "name": "oldest: date and length tie goes to ordinal path order",
+      "rule": "oldest",
+      "files": [
+        { "path": "/a/b", "created": "2020-01-01T00:00:00Z", "modified": "2020-01-01T00:00:00Z" },
+        { "path": "/a/a", "created": "2020-01-01T00:00:00Z", "modified": "2020-01-01T00:00:00Z" }
+      ],
+      "keeper": "/a/a",
+      "selected": ["/a/b"]
+    },
+    {
+      "name": "oldest: an unknown creation date loses to a known one",
+      "rule": "oldest",
+      "files": [
+        { "path": "/x/a", "created": null, "modified": "2019-01-01T00:00:00Z" },
+        { "path": "/x/b", "created": "2020-01-01T00:00:00Z", "modified": "2020-01-01T00:00:00Z" }
+      ],
+      "keeper": "/x/b",
+      "selected": ["/x/a"]
+    },
+    {
+      "name": "newest: an unknown creation date loses to a known one",
+      "rule": "newest",
+      "files": [
+        { "path": "/x/a", "created": null, "modified": "2025-01-01T00:00:00Z" },
+        { "path": "/x/b", "created": "2020-01-01T00:00:00Z", "modified": "2020-01-01T00:00:00Z" }
+      ],
+      "keeper": "/x/b",
+      "selected": ["/x/a"]
+    }
+  ],
+  "enforceKeepOne": [
+    {
+      "name": "a fully selected group gets its keeper unselected; unrelated paths stay selected",
+      "rule": "oldest",
+      "groups": [
+        [
+          { "path": "/Users/me/Downloads/movie.mov", "created": "2020-01-01T00:00:00Z", "modified": "2024-06-01T00:00:00Z" },
+          { "path": "/Users/me/Movies/movie.mov", "created": "2022-01-01T00:00:00Z", "modified": "2022-01-01T00:00:00Z" },
+          { "path": "/Users/me/Movies/Old/movie copy.mov", "created": "2021-01-01T00:00:00Z", "modified": "2021-01-01T00:00:00Z" }
+        ]
+      ],
+      "selection": ["/Users/me/Downloads/movie.mov", "/Users/me/Movies/movie.mov", "/Users/me/Movies/Old/movie copy.mov", "/elsewhere/unrelated"],
+      "expected": ["/Users/me/Movies/movie.mov", "/Users/me/Movies/Old/movie copy.mov", "/elsewhere/unrelated"]
+    },
+    {
+      "name": "the keeper unselected depends on the rule",
+      "rule": "outsideDownloads",
+      "groups": [
+        [
+          { "path": "/Users/me/Downloads/movie.mov", "created": "2020-01-01T00:00:00Z", "modified": "2024-06-01T00:00:00Z" },
+          { "path": "/Users/me/Movies/movie.mov", "created": "2022-01-01T00:00:00Z", "modified": "2022-01-01T00:00:00Z" },
+          { "path": "/Users/me/Movies/Old/movie copy.mov", "created": "2021-01-01T00:00:00Z", "modified": "2021-01-01T00:00:00Z" }
+        ]
+      ],
+      "selection": ["/Users/me/Downloads/movie.mov", "/Users/me/Movies/movie.mov", "/Users/me/Movies/Old/movie copy.mov"],
+      "expected": ["/Users/me/Downloads/movie.mov", "/Users/me/Movies/movie.mov"]
+    },
+    {
+      "name": "a partially selected group is left alone",
+      "rule": "oldest",
+      "groups": [
+        [
+          { "path": "/Users/me/Downloads/movie.mov", "created": "2020-01-01T00:00:00Z", "modified": "2024-06-01T00:00:00Z" },
+          { "path": "/Users/me/Movies/movie.mov", "created": "2022-01-01T00:00:00Z", "modified": "2022-01-01T00:00:00Z" },
+          { "path": "/Users/me/Movies/Old/movie copy.mov", "created": "2021-01-01T00:00:00Z", "modified": "2021-01-01T00:00:00Z" }
+        ]
+      ],
+      "selection": ["/Users/me/Movies/movie.mov"],
+      "expected": ["/Users/me/Movies/movie.mov"]
+    }
+  ]
+}

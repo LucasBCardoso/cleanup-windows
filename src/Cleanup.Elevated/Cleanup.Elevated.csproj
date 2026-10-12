@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Elevated helper (design §7): named-pipe server with an operation allow-list. Arrives in W6. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(WindowsTarget)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Cleanup.Core\Cleanup.Core.csproj" />
+  </ItemGroup>
+</Project>

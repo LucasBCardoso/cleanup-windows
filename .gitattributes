@@ -1,0 +1,3 @@
+* text=auto
+# Vendored byte for byte from the macOS repo; shared/SOURCE holds their SHA-256.
+shared/** -text

@@ -1,0 +1,26 @@
+{
+  "description": "cleanup:// link parsing (DeepLink.parse). Scheme and host are case-insensitive. Hosts: hoje/home and optimize/otimizar open the home module (optimizing is never started from a link; the user presses the button), scan/verificar start a read-only scan, history/historico open the history, open/<module> opens a module whose identifier matches case-insensitively (the canonical spelling is returned) and must be the only path component. Anything else, including other schemes, unknown hosts, unknown modules, path traversal and destructive actions, is refused. expected: { action: open, module } | { action: scan } | { action: history } | null (refused). Links never delete anything.",
+  "modules": ["home", "smartScan", "largeFiles", "duplicates", "developer", "privacy", "uninstaller", "updater",
+              "extensions", "spaceLens", "optimization", "maintenance"],
+  "cases": [
+    { "url": "cleanup://hoje", "expected": { "action": "open", "module": "home" } },
+    { "url": "cleanup://home", "expected": { "action": "open", "module": "home" } },
+    { "url": "cleanup://optimize", "expected": { "action": "open", "module": "home" } },
+    { "url": "cleanup://otimizar", "expected": { "action": "open", "module": "home" } },
+    { "url": "cleanup://open/duplicates", "expected": { "action": "open", "module": "duplicates" } },
+    { "url": "cleanup://open/spacelens", "expected": { "action": "open", "module": "spaceLens" } },
+    { "url": "cleanup://open/SMARTSCAN", "expected": { "action": "open", "module": "smartScan" } },
+    { "url": "cleanup://scan", "expected": { "action": "scan" } },
+    { "url": "cleanup://verificar", "expected": { "action": "scan" } },
+    { "url": "CLEANUP://SCAN", "expected": { "action": "scan" } },
+    { "url": "cleanup://history", "expected": { "action": "history" } },
+    { "url": "cleanup://historico", "expected": { "action": "history" } },
+    { "url": "cleanup://clean", "expected": null },
+    { "url": "cleanup://open/../etc", "expected": null },
+    { "url": "cleanup://open/notamodule", "expected": null },
+    { "url": "cleanup://open/home/extra", "expected": null },
+    { "url": "cleanup://open", "expected": null },
+    { "url": "https://scan", "expected": null },
+    { "url": "cleanup://", "expected": null }
+  ]
+}

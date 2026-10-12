@@ -1,0 +1,75 @@
+{
+  "description": "Parsing the output of a privileged batch (several elevated steps run as one script behind one password/UAC prompt). After each step the script prints one marker line: '@@cleanup-step-<nonce> <index> <exitCode> <step output as base64 of its UTF-8 bytes>' (the base64 field is empty when the step printed nothing, leaving a trailing space). The output is split into lines on '\\n' and '\\r' (so CRLF and bare CR both work). A line counts only if it starts with '@@cleanup-step-<nonce> ' for this batch's nonce, then has 2 or 3 space-separated fields, an integer index, an integer exit code and (if present) valid base64; anything else is ignored. Markers count only in step order: a marker counts only when its index equals the number of markers already accepted, so a stray, repeated, out-of-order or forged line cannot claim a step. A step with no accepted marker reports exitCode -1 and empty output (never ran: script killed or prompt refused). Decoded output is trimmed of leading/trailing whitespace and newlines. Each case: nonce, stepCount, the raw output text, and the expected result per step in order.",
+  "cases": [
+    {
+      "name": "maps markers to steps and decodes their output",
+      "nonce": "N",
+      "stepCount": 3,
+      "output": "@@cleanup-step-N 0 0 aGVsbG8K\n@@cleanup-step-N 1 1 Ym9vbQptb3Jl\n@@cleanup-step-N 2 0 \n",
+      "expected": [
+        { "exitCode": 0, "output": "hello" },
+        { "exitCode": 1, "output": "boom\nmore" },
+        { "exitCode": 0, "output": "" }
+      ]
+    },
+    {
+      "name": "a step without a marker reports -1 (not run)",
+      "nonce": "N",
+      "stepCount": 2,
+      "output": "@@cleanup-step-N 0 0 \n",
+      "expected": [
+        { "exitCode": 0, "output": "" },
+        { "exitCode": -1, "output": "" }
+      ]
+    },
+    {
+      "name": "wrong nonce, unknown index, garbage and a repeated index are ignored",
+      "nonce": "N",
+      "stepCount": 2,
+      "output": "@@cleanup-step-X 0 0 \n@@cleanup-step-N 7 0 \n@@cleanup-step-N x 0 \n@@cleanup-step-N 0 1 \n@@cleanup-step-N 0 0 ",
+      "expected": [
+        { "exitCode": 1, "output": "" },
+        { "exitCode": -1, "output": "" }
+      ]
+    },
+    {
+      "name": "a marker arriving before its turn is ignored",
+      "nonce": "N",
+      "stepCount": 2,
+      "output": "@@cleanup-step-N 1 0 \n@@cleanup-step-N 0 1 \n@@cleanup-step-N 1 1 ",
+      "expected": [
+        { "exitCode": 1, "output": "" },
+        { "exitCode": 1, "output": "" }
+      ]
+    },
+    {
+      "name": "CRLF and bare CR line endings do not hide markers",
+      "nonce": "N",
+      "stepCount": 2,
+      "output": "progress 50%\r\n@@cleanup-step-N 0 0 \r\n@@cleanup-step-N 1 0 \r",
+      "expected": [
+        { "exitCode": 0, "output": "" },
+        { "exitCode": 0, "output": "" }
+      ]
+    },
+    {
+      "name": "invalid base64 makes the marker invalid",
+      "nonce": "N",
+      "stepCount": 1,
+      "output": "@@cleanup-step-N 0 0 !!!\n",
+      "expected": [
+        { "exitCode": -1, "output": "" }
+      ]
+    },
+    {
+      "name": "no output at all: every step reports -1",
+      "nonce": "N",
+      "stepCount": 2,
+      "output": "",
+      "expected": [
+        { "exitCode": -1, "output": "" },
+        { "exitCode": -1, "output": "" }
+      ]
+    }
+  ]
+}
