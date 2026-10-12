@@ -1,14 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- cleanup.exe: same commands and flags as the macOS CLI; a dry run unless "yes" is passed. -->
+  <!-- The CLI: same commands and flags as the macOS CLI; a dry run unless "yes" is passed. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(WindowsTarget)</TargetFramework>
-    <AssemblyName>cleanup</AssemblyName>
+    <!-- cleanup-cli.exe, like the CLI inside the macOS app bundle: "cleanup.exe" would collide with Cleanup.exe (the app)
+         on a case-insensitive file system. The installer adds a cleanup.cmd shim. -->
+    <AssemblyName>cleanup-cli</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Cleanup.Core\Cleanup.Core.csproj" />
     <ProjectReference Include="..\Cleanup.Platform.Windows\Cleanup.Platform.Windows.csproj" />
-    <!-- Ships Cleanup.Elevated.exe next to cleanup.exe (the UAC helper for system junk). -->
+    <!-- Ships Cleanup.Elevated.exe next to cleanup-cli.exe (the UAC helper for system junk). -->
     <ProjectReference Include="..\Cleanup.Elevated\Cleanup.Elevated.csproj" />
   </ItemGroup>
 </Project>
