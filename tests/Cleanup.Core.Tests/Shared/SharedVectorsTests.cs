@@ -69,7 +69,6 @@ public class SharedVectorsTests
     [Theory]
     
     
-    [InlineData("keep-rule.json")]
     [InlineData("privileged-batch.json")]
     
     

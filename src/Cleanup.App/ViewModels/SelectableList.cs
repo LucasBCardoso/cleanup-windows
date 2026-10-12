@@ -65,6 +65,9 @@ public abstract partial class SelectableList : ObservableObject
 
     public IEnumerable<ItemRow> AllRows => AllGroups.SelectMany(g => g.Rows);
     public IEnumerable<ItemRow> ShownRows => Groups.SelectMany(g => g);
+
+    /// <summary>What "Selecionar tudo" and the counts cover: shown, enabled rows (Duplicados also leaves out each kept copy).</summary>
+    protected virtual IEnumerable<ItemRow> SelectableRows => ShownRows.Where(r => r.IsEnabled);
     public long TotalSize => AllRows.Sum(r => r.Item.Size);
     public int TotalCount => AllRows.Count();
 
@@ -110,7 +113,7 @@ public abstract partial class SelectableList : ObservableObject
 
     public virtual void ToggleAll()
     {
-        var shown = ShownRows.Where(r => r.IsEnabled).ToList();
+        var shown = SelectableRows.ToList();
         var ids = shown.Select(r => r.Id).ToList();
         var selected = AllRows.Where(r => r.IsSelected).Select(r => r.Id).ToHashSet();
         var target = Selection.Toggled(selected, ids);
@@ -120,15 +123,16 @@ public abstract partial class SelectableList : ObservableObject
     protected virtual void UpdateSelection()
     {
         var all = AllRows.ToList();
-        var shownIds = ShownRows.Where(r => r.IsEnabled).Select(r => r.Id).ToList();
+        var shownIds = SelectableRows.Select(r => r.Id).ToList();
         var selectedIds = all.Where(r => r.IsSelected).Select(r => r.Id).ToHashSet();
         var state = Selection.State(selectedIds, shownIds);
         var shownSelected = shownIds.Count(selectedIds.Contains);
+        var selectedOutsideSearch = selectedIds.Count - ShownRows.Count(r => r.IsSelected);
         SelectedSize = all.Where(r => r.IsSelected).Sum(r => r.Item.Size);
         SelectedCount = selectedIds.Count;
         SelectedAdminCount = all.Count(r => r.IsSelected && r.IsAdmin);
         CountLabel = Selection.CountLabel(shownSelected, shownIds.Count);
-        HiddenLabel = Selection.HiddenLabel(selectedIds.Count - shownSelected);
+        HiddenLabel = Selection.HiddenLabel(selectedOutsideSearch);
         SelectAllState = state switch { SelectionState.All => true, SelectionState.None => false, _ => null };
         SelectAllText = state == SelectionState.All ? "Desmarcar tudo" : "Selecionar tudo";
         OnPropertyChanged(nameof(SelectedSizeText));

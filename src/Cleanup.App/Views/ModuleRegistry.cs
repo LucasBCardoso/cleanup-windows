@@ -16,6 +16,8 @@ public static class ModuleRegistry
         Module.Extensions => new ExtensionsView(),
         Module.Optimization => new OptimizationView(),
         Module.Maintenance => new MaintenanceView(),
+        Module.Duplicates => new DuplicatesView(),
+        Module.Developer => new DeveloperView(),
         _ => null,
     };
 }
