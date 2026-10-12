@@ -137,6 +137,34 @@
                         <Border Style="{StaticResource CardStyle}">
                             <StackPanel Spacing="6">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE896;" FontSize="14" Foreground="{ThemeResource AccentInkBrush}" />
+                                    <TextBlock Text="Atualizações" Style="{StaticResource RowTitleStyle}" />
+                                </StackPanel>
+                                <TextBlock x:Name="UpdatesCount" Text="…" Style="{StaticResource DisplayTextStyle}" FontSize="30" />
+                                <TextBlock x:Name="UpdatesLine" Text="Procurando versões novas…" Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap" />
+                                <HyperlinkButton Content="Ver atualizações" Padding="0" Margin="0,4,0,0" Click="OnUpdates" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="1" Style="{StaticResource CardStyle}">
+                            <StackPanel Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE74D;" FontSize="14" Foreground="{ThemeResource AccentInkBrush}" />
+                                    <TextBlock Text="Apps esquecidos" Style="{StaticResource RowTitleStyle}" />
+                                </StackPanel>
+                                <TextBlock x:Name="ForgottenCount" Text="…" Style="{StaticResource DisplayTextStyle}" FontSize="30" />
+                                <TextBlock x:Name="ForgottenLine" Text="Contando apps sem uso…" Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap" />
+                                <HyperlinkButton Content="Abrir Desinstalador" Padding="0" Margin="0,4,0,0" Click="OnUninstaller" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                    <Grid ColumnSpacing="18">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource CardStyle}">
+                            <StackPanel Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon Glyph="&#xE95E;" FontSize="14" Foreground="{ThemeResource AccentInkBrush}" />
                                     <TextBlock Text="Saúde" Style="{StaticResource RowTitleStyle}" />
                                 </StackPanel>

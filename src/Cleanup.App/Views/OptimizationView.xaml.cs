@@ -29,7 +29,7 @@ public sealed partial class OptimizationView : UserControl
     public bool Not(bool value) => !value;
     public Visibility Hide(bool value) => value ? Visibility.Collapsed : Visibility.Visible;
     public bool IsEmpty(int count) => count == 0;
-    public string FooterText(string? step) => step ?? "Limpa lixo seguro, libera memória, renova o DNS, limpa miniaturas e remove itens de inicialização quebrados.";
+    public string FooterText(string? step) => step ?? "Limpa lixo seguro, libera memória, renova o DNS e remove itens de inicialização quebrados.";
 
     private void SelectTab(OptimizationTab tab)
     {

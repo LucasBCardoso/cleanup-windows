@@ -22,7 +22,9 @@ public sealed partial class HomeView : UserControl
         {
             await RefreshTilesAsync();
             await History.ReloadAsync();
+            await RefreshAppTilesAsync();
         };
+        UpdaterViewModel.UpdatesFoundChanged += () => DispatcherQueue.TryEnqueue(ShowUpdates);
         Scan.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(ScanViewModel.IsCleaning) && !Scan.IsCleaning) _ = RefreshTilesAsync();
@@ -50,6 +52,49 @@ public sealed partial class HomeView : UserControl
         BinSize.Text = ByteFormat.Format(bin.Size);
         BinLine.Text = bin.Items == 0 ? "A Lixeira está vazia." : $"{bin.Items} {(bin.Items == 1 ? "item" : "itens")} em todas as unidades. O Smart Scan pode esvaziá-la.";
     }
+
+    private bool appTilesStarted;
+
+    /// <summary>Atualizações (a read-only winget listing) and Apps esquecidos (6 months unused), once per launch.</summary>
+    private async Task RefreshAppTilesAsync()
+    {
+        if (appTilesStarted) return;
+        appTilesStarted = true;
+        ShowUpdates();
+        var updater = AppsViewModels.Updater;
+        if (UpdaterViewModel.UpdatesFound is null && updater.CheckCommand.CanExecute(null)) updater.CheckCommand.Execute(null);
+        try
+        {
+            var forgotten = await UninstallerViewModel.Shared.ForgottenCountAsync();
+            ForgottenCount.Text = forgotten.ToString();
+            ForgottenLine.Text = forgotten switch
+            {
+                0 => "Nenhum app parado há mais de 6 meses.",
+                1 => "1 app não é usado há mais de 6 meses.",
+                _ => $"{forgotten} apps não são usados há mais de 6 meses.",
+            };
+        }
+        catch (Exception e)
+        {
+            ForgottenCount.Text = "?";
+            ForgottenLine.Text = "Não foi possível ler os apps: " + e.Message;
+        }
+    }
+
+    private void ShowUpdates()
+    {
+        if (UpdaterViewModel.UpdatesFound is not { } count) return;
+        UpdatesCount.Text = count.ToString();
+        UpdatesLine.Text = count switch
+        {
+            0 => "Tudo atualizado.",
+            1 => "1 app tem versão nova.",
+            _ => $"{count} apps têm versão nova.",
+        };
+    }
+
+    private void OnUpdates(object sender, RoutedEventArgs e) => App.Window?.Navigate(Module.Updater);
+    private void OnUninstaller(object sender, RoutedEventArgs e) => App.Window?.Navigate(Module.Uninstaller);
 
     public Visibility Show(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
     public bool Not(bool value) => !value;
