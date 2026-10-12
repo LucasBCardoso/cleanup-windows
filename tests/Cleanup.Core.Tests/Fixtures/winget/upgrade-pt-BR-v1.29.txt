@@ -1,0 +1,23 @@
+Nome                                             ID                                     Versão                        Disponível                    Origem
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+Assistente de Instalação do Windows 11           Microsoft.WindowsInstallationAssistant 1.4.19041.6448                1.4.19041.7779                winget
+Dokan Library 2.2.1.1000 Bundle                  dokan-dev.Dokany                       2.2.1.1000                    2.3.1.1000                    winget
+EndNote X9                                       ClarivateAnalytics.EndNote             19.0.0.12062                  22.4.0.20690                  winget
+Epson Event Manager                              EPSON.EventManager                     3.10.0085                     3.11.82                       winget
+Epson Scan 2                                     EPSON.EpsonScan2                       Unknown                       6.7.81.0                      winget
+Epson Software Updater                           EPSON.SoftwareUpdater                  4.6.7                         5.0.1.0                       winget
+EpsonNet Print                                   EPSON.EpsonNetPrint                    3.2.0.0                       3.3.1                         winget
+heroku                                           Heroku.HerokuCLI                       10.0.0                        11.0.0                        winget
+Logitech G HUB                                   Logitech.GHUB                          2026.2.861817                 2026.4.919028                 winget
+Microsoft Windows Desktop Runtime - 6.0.11 (x64) Microsoft.DotNet.DesktopRuntime.6      6.0.11                        6.0.36                        winget
+Microsoft Windows Desktop Runtime - 8.0.21 (x64) Microsoft.DotNet.DesktopRuntime.8      8.0.21                        8.0.31                        winget
+OpenAL                                           CreativeTechnology.OpenAL              Unknown                       1.1                           winget
+Subsistema do Windows para Linux                 Microsoft.WSL                          2.7.10.0                      2.7.13                        winget
+Terminal do Windows                              Microsoft.WindowsTerminal              1.24.12741.0                  1.25.2733.0                   winget
+Warp                                             Warp.Warp                              v0.2025.10.15.08.12.stable_01 v0.2026.09.30.08.29.stable_01 winget
+16 atualizações disponíveis.
+
+Os pacotes a seguir têm uma atualização disponível, mas exigem uma segmentação explícita para atualização:
+Nome    ID              Versão   Disponível Origem
+--------------------------------------------------
+Discord Discord.Discord 1.0.9259 1.0.9261   winget
