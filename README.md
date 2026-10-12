@@ -7,24 +7,58 @@ with **C# / .NET 10 + WinUI 3** for Windows 10 22H2 and Windows 11.
 The macOS repo is the reference implementation. Everything here follows its design document,
 [`docs/superpowers/specs/2026-10-12-windows-version-design.md`](https://github.com/LucasBCardoso/cleanup/blob/master/docs/superpowers/specs/2026-10-12-windows-version-design.md).
 
-## Install
+## Download and install
 
-On any PC, run **`Cleanup-Setup-<versão>.exe`**. Every CI run attaches it as the *Cleanup-Setup* artifact, or you can
-build it yourself (below). It installs for the current user, without an administrator, to
-`%LOCALAPPDATA%\Programs\Cleanup`, and adds:
+1. Open **[Releases](https://github.com/LucasBCardoso/cleanup-windows/releases/latest)** and download
+   `Cleanup-Setup-<version>.exe`. The repository is private, so sign in to GitHub with an account that has access.
+2. Run it. It needs Windows 10 22H2 or Windows 11 (x64); no administrator, .NET or Windows App SDK install is needed,
+   because everything ships inside the installer.
+3. If SmartScreen warns about an unknown publisher (the installer isn't code-signed), choose **Mais informações →
+   Executar assim mesmo**.
+
+The installer is for the current user only. It installs to `%LOCALAPPDATA%\Programs\Cleanup` and adds:
 
 - a Start Menu shortcut (a Desktop shortcut is optional);
-- an entry in Configurações › Aplicativos to uninstall it;
-- optionally, `cleanup` on the PATH.
+- an entry in **Configurações › Aplicativos**, which is also how you uninstall;
+- optionally, `cleanup` on the PATH for the CLI.
 
-Uninstalling keeps the history and settings in `%LOCALAPPDATA%\Cleanup`. The app is unsigned, so SmartScreen may ask
-once: "Mais informações → Executar assim mesmo". Silent install: `Cleanup-Setup-1.0.0.exe /VERYSILENT`.
+Installing a newer version over an older one keeps everything. Uninstalling removes the app, its login entry and the
+`cleanup:` link, and keeps your history and settings in `%LOCALAPPDATA%\Cleanup`.
+
+| Situation | Command |
+|---|---|
+| Silent install, e.g. in a script | `Cleanup-Setup-1.0.0.exe /VERYSILENT /SUPPRESSMSGBOXES` |
+| Silent uninstall | `"%LOCALAPPDATA%\Programs\Cleanup\unins000.exe" /VERYSILENT` |
+
+## Releasing a new version
+
+Releases are built by GitHub Actions (`.github/workflows/release.yml`). Pushing a tag that starts with `v` triggers a
+run that:
+
+1. tests the solution;
+2. builds the self-contained app and `Cleanup-Setup-<version>.exe`, taking the version from the tag;
+3. publishes a GitHub Release with the installer attached.
 
 ```powershell
-winget install JRSoftware.InnoSetup           # once, to build the Setup.exe
-./scripts/publish.ps1 -Version 1.0.0          # → artifacts\Cleanup-Setup-1.0.0.exe (+ artifacts\Cleanup folder and zip)
-./artifacts/Cleanup/install.ps1 -AddToPath    # alternative without Setup.exe (same folder; -Uninstall to remove)
+git tag -a v1.1.0 -m "Cleanup 1.1.0"
+git push origin v1.1.0
 ```
+
+If the tests fail, nothing is published. Follow the run under **Actions › Release**.
+
+Every push to `main` also builds the installer in CI (`.github/workflows/ci.yml`), as the *Cleanup-Setup* artifact of
+that run. Use it to try a build before tagging it.
+
+### Building the installer locally
+
+```powershell
+winget install JRSoftware.InnoSetup           # once
+./scripts/publish.ps1 -Version 1.1.0          # → artifacts\Cleanup-Setup-1.1.0.exe, artifacts\Cleanup (folder) and a zip
+./artifacts/Cleanup/install.ps1 -AddToPath    # install without the Setup.exe (same folder; -Uninstall to remove)
+```
+
+The installer is defined in `installer/Cleanup.iss` (Inno Setup 6). Keep its `AppId` unchanged: Windows uses it to
+recognise an upgrade of the same app.
 
 ## What's in it
 
