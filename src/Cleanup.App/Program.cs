@@ -15,7 +15,9 @@ public static class Program
     private static int Main(string[] args)
     {
         WinRT.ComWrappersSupport.InitializeComWrappers();
-        var main = AppInstance.FindOrRegisterForKey("Cleanup.Main");
+        // CLEANUP_INSTANCE lets development copies run side by side (and leaves the cleanup: protocol alone).
+        var instance = Environment.GetEnvironmentVariable("CLEANUP_INSTANCE");
+        var main = AppInstance.FindOrRegisterForKey("Cleanup.Main" + instance);
         if (!main.IsCurrent)
         {
             var activation = AppInstance.GetCurrent().GetActivatedEventArgs();
@@ -25,7 +27,7 @@ public static class Program
         }
         main.Activated += (_, e) => App.Window?.DispatcherQueue.TryEnqueue(() => App.Window.FollowLink(LinkFrom(e)));
         App.PendingLink = args.FirstOrDefault(a => a.StartsWith("cleanup:", StringComparison.OrdinalIgnoreCase));
-        ProtocolRegistration.EnsureRegistered();
+        if (string.IsNullOrEmpty(instance)) ProtocolRegistration.EnsureRegistered();
 
         Application.Start(_p =>
         {
