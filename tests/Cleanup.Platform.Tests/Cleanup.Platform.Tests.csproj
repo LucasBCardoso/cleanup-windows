@@ -15,5 +15,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Cleanup.Platform.Windows\Cleanup.Platform.Windows.csproj" />
+    <ProjectReference Include="..\..\src\Cleanup.Cli\Cleanup.Cli.csproj" />
   </ItemGroup>
 </Project>

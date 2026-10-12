@@ -18,6 +18,7 @@ public abstract record Command
     public sealed record History : Command;
     public sealed record Undo(string? Id, bool Confirm) : Command;
     public sealed record Disk : Command;
+    public sealed record Health(bool IncludeSnoozed) : Command;
 }
 
 /// <summary>Parses arguments into a <see cref="Command"/>; kept apart from execution so it is easy to test.</summary>
@@ -32,6 +33,7 @@ public static class CommandLine
           large [--min-size 500MB] [--older-than DAYS]
           lens [PATH]                        what is using space, folder by folder
           disk                               used and free space per drive
+          health [--all]                     readings and alerts (--all includes snoozed ones)
           ignore [list | add PATH | remove PATH]
           history                            past cleanups and what can still come back
           undo [ID] [--yes]                  put the last (or given) cleanup back
@@ -51,6 +53,7 @@ public static class CommandLine
             "large" => ParseLarge(rest),
             "lens" => new Command.Lens(rest.Count > 0 ? rest[0] : null),
             "disk" => new Command.Disk(),
+            "health" => new Command.Health(TakeFlag(rest, "--all")).Done(rest),
             "ignore" => ParseIgnore(rest),
             "history" => new Command.History(),
             "undo" => ParseUndo(rest),

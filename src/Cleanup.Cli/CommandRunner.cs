@@ -29,6 +29,7 @@ public sealed class CommandRunner(TextWriter output)
         Command.Large l => Large(l),
         Command.Lens l => await LensAsync(l),
         Command.Disk => Disk(),
+        Command.Health h => await HealthAsync(h),
         Command.IgnoreList => IgnoreList(),
         Command.IgnoreAdd a => IgnoreChange(list => list.Adding(a.Path), $"Ignoring {a.Path}"),
         Command.IgnoreRemove r => IgnoreChange(list => list.Removing(r.Path), $"No longer ignoring {r.Path}"),
@@ -185,6 +186,32 @@ public sealed class CommandRunner(TextWriter output)
         }
         var (bin, count) = RecycleBin.Query();
         Write($"Recycle Bin: {ByteFormat.Format(bin)} in {count} item(s)");
+        return 0;
+    }
+
+    private async Task<int> HealthAsync(Command.Health command)
+    {
+        var sampler = new HealthSampler();
+        var drive = Path.GetPathRoot(environment.Home) ?? "C:\\";
+        sampler.Sample(drive); // CPU needs two readings
+        await Task.Delay(1000);
+        var s = sampler.Sample(drive);
+        if (s.CpuUsage is { } cpu) Write($"CPU          {cpu:0}%" + (s.TopProcess is { } top ? $"  (top: {top.Name} {top.Cpu:0}%)" : ""));
+        if (s.MemoryUsed is { } used && s.MemoryTotal is { } total) Write($"Memory       {ByteFormat.Format(used)} of {ByteFormat.Format(total)}, pressure {s.Pressure?.ToString().ToLowerInvariant() ?? "unknown"}");
+        if (s.DiskFree is { } free && s.DiskTotal is { } disk) Write($"Disk         {ByteFormat.Format(free)} free of {ByteFormat.Format(disk)}");
+        if (s.Battery is { } b) Write($"Battery      {b.ChargePercent}%{(b.IsCharging ? " charging" : b.OnPower ? " on power" : "")}{(b.HealthPercent is { } hp ? $", health {hp}%" : "")}{(b.CycleCount is { } cy ? $", {cy} cycles" : "")}");
+        if (s.Uptime is { } up) Write($"Uptime       {(int)up.TotalDays} d {up.Hours} h");
+        if (s.TrashSize is { } trash) Write($"Recycle Bin  {ByteFormat.Format(trash)}");
+        var snoozes = Cleanup.Core.Health.HealthSnoozes.Load();
+        var issues = Cleanup.Core.Health.HealthEvaluator.Issues(s, new Cleanup.Core.Health.CpuHistory())
+            .Where(i => command.IncludeSnoozed || !snoozes.IsSnoozed(i.Id, DateTimeOffset.Now)).ToList();
+        Write();
+        if (issues.Count == 0) Write("No alerts.");
+        foreach (var i in issues)
+        {
+            var snoozed = snoozes.IsSnoozed(i.Id, DateTimeOffset.Now) ? " (snoozed)" : "";
+            Write($"[{i.Severity.ToString().ToLowerInvariant()}] {i.Title}: {i.Message}{snoozed}");
+        }
         return 0;
     }
 
