@@ -9,8 +9,11 @@ The macOS repo is the reference implementation. Everything here follows its desi
 
 ## Download and install
 
-1. Open **[Releases](https://github.com/LucasBCardoso/cleanup-windows/releases/latest)** and download
-   `Cleanup-Setup-<version>.exe`.
+**[⬇ Baixar o Cleanup para Windows (Cleanup-Setup.exe)](https://github.com/LucasBCardoso/cleanup-windows/releases/latest/download/Cleanup-Setup.exe)**
+
+1. Download the installer with the link above. It always points to the latest version. The
+   **[Releases](https://github.com/LucasBCardoso/cleanup-windows/releases/latest)** page has the same file as
+   `Cleanup-Setup-<version>.exe`, with its SHA-256 and what changed.
 2. Run it. It needs Windows 10 22H2 or Windows 11 (x64); no administrator, .NET or Windows App SDK install is needed,
    because everything ships inside the installer.
 3. Signed releases show **SignPath Foundation** as the publisher (see [Code signing policy](#code-signing-policy)).

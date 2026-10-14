@@ -164,4 +164,7 @@ jobs:
 
           $signing SHA-256: ``$sha``
           "@
-          gh release create "v$version" $setup "$setup.sha256" --target $env:GITHUB_SHA --title "Cleanup $version" --notes $notes
+          # Same file under a fixed name, so README links to releases/latest/download/Cleanup-Setup.exe. The app only
+          # downloads the versioned one (ReleaseFeed).
+          Copy-Item $setup artifacts/Cleanup-Setup.exe
+          gh release create "v$version" $setup "$setup.sha256" artifacts/Cleanup-Setup.exe --target $env:GITHUB_SHA --title "Cleanup $version" --notes $notes
