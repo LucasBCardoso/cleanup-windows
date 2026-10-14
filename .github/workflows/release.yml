@@ -12,21 +12,30 @@ jobs:
   release:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           global-json-file: global.json
+      # The tag reaches the scripts only through $env:TAG, never pasted into them, and must look like v1.2.3.
+      - name: Check tag
+        shell: pwsh
+        env:
+          TAG: ${{ github.ref_name }}
+        run: if ($env:TAG -notmatch '^v\d+\.\d+\.\d+$') { throw "A tag precisa ser vX.Y.Z, veio '$env:TAG'." }
       - name: Test
         run: dotnet test Cleanup.sln -c Release
       - name: Publish
         shell: pwsh
-        run: ./scripts/publish.ps1 -Version "${{ github.ref_name }}".TrimStart('v')
+        env:
+          TAG: ${{ github.ref_name }}
+        run: ./scripts/publish.ps1 -Version ($env:TAG.TrimStart('v'))
       - name: Create release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
         run: |
-          $version = "${{ github.ref_name }}".TrimStart('v')
+          $version = $env:TAG.TrimStart('v')
           $notes = @"
           Instalador do Cleanup para Windows $version.
 
@@ -36,4 +45,4 @@ jobs:
 
           O instalador não é assinado. Se o SmartScreen avisar, clique em "Mais informações" e depois em "Executar assim mesmo".
           "@
-          gh release create "${{ github.ref_name }}" "artifacts/Cleanup-Setup-$version.exe" --title "Cleanup $version" --notes $notes
+          gh release create $env:TAG"artifacts/Cleanup-Setup-$version.exe" --title "Cleanup $version" --notes $notes
