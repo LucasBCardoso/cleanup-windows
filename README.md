@@ -13,8 +13,9 @@ The macOS repo is the reference implementation. Everything here follows its desi
    `Cleanup-Setup-<version>.exe`.
 2. Run it. It needs Windows 10 22H2 or Windows 11 (x64); no administrator, .NET or Windows App SDK install is needed,
    because everything ships inside the installer.
-3. If SmartScreen warns about an unknown publisher (the installer isn't code-signed), choose **Mais informações →
-   Executar assim mesmo**.
+3. Signed releases show **SignPath Foundation** as the publisher (see [Code signing policy](#code-signing-policy)).
+   If SmartScreen still warns, which happens with an unsigned release or while a new certificate builds reputation,
+   choose **Mais informações → Executar assim mesmo**.
 
 The installer is for the current user only. It installs to `%LOCALAPPDATA%\Programs\Cleanup` and adds:
 
@@ -24,9 +25,10 @@ The installer is for the current user only. It installs to `%LOCALAPPDATA%\Progr
 
 Once installed, Cleanup **updates itself** (Ajustes › Atualizações, on by default). Every 6 hours it looks at the
 latest release, downloads its `Cleanup-Setup-<version>.exe`, checks it against the SHA-256 GitHub publishes for the
-file, and installs it silently when the window is closed (it comes back in the tray) or when you quit. Only copies
-installed by the Setup update themselves; a development build or the zip never does. Versions before 1.3 had no
-updater, so install 1.3 or later by hand once.
+file, and installs it silently when the window is closed (it comes back in the tray) or when you quit. A signed
+Cleanup also requires the update to carry a valid signature from the same publisher, so a release swapped on GitHub
+can't install itself. Only copies installed by the Setup update themselves; a development build or the zip never
+does. Versions before 1.3 had no updater, so install 1.3 or later by hand once.
 
 Installing a newer version over an older one keeps everything. Uninstalling removes the app, its login entry and the
 `cleanup:` link, and keeps your history and settings in `%LOCALAPPDATA%\Cleanup`.
@@ -43,8 +45,11 @@ Every push to `main` that changes the app is a release. GitHub Actions (`.github
 1. computes the version with `scripts/version.ps1`: major.minor from the `VERSION` file, plus the number of commits
    since `VERSION` last changed (`1.3` bumped five commits ago → `1.3.5`);
 2. tests the solution, and stops there if anything fails;
-3. builds the self-contained app and `Cleanup-Setup-<version>.exe`;
-4. publishes the GitHub Release `v<version>` with the installer, a `.sha256` file and the commits since the previous
+3. builds the self-contained app (`scripts/publish.ps1 -NoSetup`);
+4. **signing on:** sends Cleanup's own binaries to SignPath and waits for the approval (*first approval*);
+5. builds `Cleanup-Setup-<version>.exe` from that folder (`scripts/setup.ps1`);
+6. **signing on:** sends the Setup.exe to SignPath and waits again (*second approval*);
+7. publishes the GitHub Release `v<version>` with the installer, a `.sha256` file and the commits since the previous
    release as notes. Installed copies pick it up within 6 hours.
 
 Pushes that only touch Markdown or `docs/` don't release. To start a new minor or major line, change `VERSION`
@@ -52,13 +57,38 @@ Pushes that only touch Markdown or `docs/` don't release. To start a new minor o
 Release**. Pull requests are built and tested by `.github/workflows/ci.yml`, with the installer as the *Cleanup-Setup*
 artifact of the run.
 
+### Signing
+
+Signing is on once the repository has the variable `SIGNPATH_ORGANIZATION_ID` and the secret `SIGNPATH_API_TOKEN`
+(**Settings › Secrets and variables › Actions**). Without them, releases go out unsigned exactly as before. Each signed
+release needs **two approvals on [signpath.io](https://app.signpath.io)**, a few minutes apart. Each request waits up
+to 3 hours. If nobody approves in time, the run fails, nothing is published, and the next push (or **Re-run**) tries
+again.
+
+One-time setup, after SignPath Foundation accepts the project at [signpath.org/apply](https://signpath.org/apply):
+
+1. In SignPath, create the project `cleanup-windows` with the signing policy `release-signing`. If you pick other
+   slugs, set them in the variables `SIGNPATH_PROJECT_SLUG` and `SIGNPATH_POLICY_SLUG`.
+2. Add two artifact configurations with the slugs `app` and `setup`, pasting `.signpath/app.xml` and
+   `.signpath/setup.xml`. Keep the repo copies in sync with SignPath.
+3. Link the predefined *GitHub.com* trusted build system to the project, and install the SignPath GitHub App on this
+   repository.
+4. Create an API token for a user who can submit to the policy. Store it as the secret `SIGNPATH_API_TOKEN`, and the
+   organization ID as the variable `SIGNPATH_ORGANIZATION_ID`.
+
+SignPath signs Cleanup's binaries only when their product name is `Cleanup` and their product version is the release
+version, which `Directory.Build.props` sets. The Setup.exe is matched by its file name only (see `.signpath/setup.xml`).
+
 ### Building the installer locally
 
 ```powershell
 winget install JRSoftware.InnoSetup           # once
 ./scripts/publish.ps1                         # → artifacts\Cleanup-Setup-<version>.exe, artifacts\Cleanup (folder) and a zip
+./scripts/setup.ps1 -Version 1.3.4            # only the Setup.exe, from an existing artifacts\Cleanup
 ./artifacts/Cleanup/install.ps1 -AddToPath    # install without the Setup.exe (same folder; -Uninstall to remove)
 ```
+
+Local builds are never signed.
 
 The installer is defined in `installer/Cleanup.iss` (Inno Setup 6). Keep its `AppId` unchanged: Windows uses it to
 recognise an upgrade of the same app.
@@ -140,3 +170,34 @@ shared/                     vendored from the macOS repo — do not edit here (s
 `shared/` in the macOS repo is the source of truth for the test vectors, the design tokens and the Windows rules. To
 change one of them, edit it there, run `swift test`, then run `./scripts/sync-shared.ps1` here. `SharedSourceTests`
 fails if a vendored file differs from the hashes in `shared/SOURCE`.
+
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by
+[SignPath Foundation](https://signpath.org).
+
+- Committers and reviewers: [Lucas Cardoso](https://github.com/LucasBCardoso)
+- Approvers: [Lucas Cardoso](https://github.com/LucasBCardoso)
+
+Only binaries built by this repository's GitHub Actions from its own source are signed: `Cleanup.exe`,
+`cleanup-cli.exe`, `Cleanup.Elevated.exe`, their `Cleanup*.dll` / `cleanup-cli.dll`, and `Cleanup-Setup-<version>.exe`.
+The .NET and Windows App SDK files inside the installer keep Microsoft's own signature. Every signing request is
+approved by hand on SignPath. Everyone with access to this repository or the SignPath project uses multi-factor
+authentication.
+
+## Privacy
+
+Cleanup has no account, telemetry, analytics or ads, and it never sends your files or anything about them anywhere.
+It only connects to the network in these cases:
+
+- **Self-update** (Ajustes › Atualizações, on by default; turning it off keeps only "Procurar agora"): it reads the
+  latest release from `api.github.com` and downloads the installer from `github.com`. These are plain GitHub requests
+  with the app version in the User-Agent, subject to [GitHub's privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
+- **Atualizador** and the Hoje tile that counts updates: these run Windows' own `winget`, which contacts its
+  configured sources (by default Microsoft's). Installing an update downloads it from the publisher of that app.
+
+Everything else (scans, history, settings, logs) stays on the PC in `%LOCALAPPDATA%\Cleanup`.
+
+## License
+
+[MIT](LICENSE). Copyright (c) 2026 Lucas Cardoso.

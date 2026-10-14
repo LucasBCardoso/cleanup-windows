@@ -6,11 +6,13 @@
 .EXAMPLE
   ./scripts/publish.ps1                 # version from scripts/version.ps1 → artifacts/Cleanup and artifacts/Cleanup-win-x64.zip
   ./scripts/publish.ps1 -Version 1.2.0
+  ./scripts/publish.ps1 -NoSetup        # only the folder and the zip (scripts/setup.ps1 builds the Setup.exe later)
 #>
 param(
     [string]$Version = (& (Join-Path $PSScriptRoot 'version.ps1')),
     [string]$Runtime = 'win-x64',
-    [string]$Out = (Join-Path $PSScriptRoot '..\artifacts')
+    [string]$Out = (Join-Path $PSScriptRoot '..\artifacts'),
+    [switch]$NoSetup
 )
 $ErrorActionPreference = 'Stop'
 $root = Resolve-Path (Join-Path $PSScriptRoot '..')
@@ -37,17 +39,8 @@ Compress-Archive -Path (Join-Path $target '*') -DestinationPath $zip
 Write-Host "Done: $target"
 Write-Host "      $zip"
 
-# Setup.exe for other PCs (Inno Setup 6: `winget install JRSoftware.InnoSetup`; preinstalled on GitHub's Windows runners).
-$iscc = @(
-    (Get-Command ISCC.exe -ErrorAction SilentlyContinue).Source,
-    (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe'),
-    (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'),
-    (Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe')
-) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
-if ($iscc) {
-    & $iscc /Q "/DAppVersion=$Version" "/DSourceDir=$((Resolve-Path $target).Path)" "/DOutputDir=$((Resolve-Path $Out).Path)" (Join-Path $root 'installer\Cleanup.iss')
-    if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed" }
-    Write-Host "      $(Join-Path $Out "Cleanup-Setup-$Version.exe")"
-} else {
-    Write-Warning "Inno Setup not found: no Setup.exe (winget install JRSoftware.InnoSetup)"
+# Setup.exe for other PCs (the release builds it in its own step, after SignPath signed the folder).
+if (-not $NoSetup) {
+    $setup = & (Join-Path $PSScriptRoot 'setup.ps1') -Version $Version -Source $target -Out $Out
+    if ($setup) { Write-Host "      $setup" }
 }

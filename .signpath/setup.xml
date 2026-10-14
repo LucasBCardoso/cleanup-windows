@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SignPath artifact configuration "setup": Cleanup-Setup-<version>.exe, built by scripts/setup.ps1 from the folder
+     signed with "app". Paste this into the SignPath project and keep both copies in sync. The file name ties it to the
+     release version. There is no product-name / product-version restriction here because Inno Setup pads those strings
+     with spaces ("Cleanup     "), which an exact match would reject; the binaries inside are restricted in app.xml. -->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" />
+  </parameters>
+  <zip-file>
+    <pe-file path="Cleanup-Setup-${version}.exe">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

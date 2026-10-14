@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SignPath artifact configuration "app": the published folder (scripts/publish.ps1 -NoSetup) that release.yml uploads
+     before the installer is built. Only Cleanup's own binaries are signed; the .NET and Windows App SDK files already
+     carry Microsoft's signature. Paste this into the SignPath project and keep both copies in sync. -->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" />
+  </parameters>
+  <zip-file>
+    <pe-file-set product-name="Cleanup" product-version="${version}">
+      <include path="Cleanup.exe" />
+      <include path="Cleanup.dll" />
+      <include path="Cleanup.Core.dll" />
+      <include path="Cleanup.Platform.Windows.dll" />
+      <include path="Cleanup.Elevated.exe" />
+      <include path="Cleanup.Elevated.dll" />
+      <include path="cleanup-cli.exe" />
+      <include path="cleanup-cli.dll" />
+      <for-each>
+        <authenticode-sign />
+      </for-each>
+    </pe-file-set>
+  </zip-file>
+</artifact-configuration>

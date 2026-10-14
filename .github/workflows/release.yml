@@ -3,6 +3,11 @@ name: Release
 # Every push to main that changes the app → tests, Setup.exe and a GitHub Release vX.Y.N (scripts/version.ps1: VERSION
 # plus the commits since it changed), with the commits since the last release as notes. The installed app finds it
 # there and updates itself (SelfUpdateViewModel). Also runs by hand from the Actions tab.
+#
+# Code signing (SignPath Foundation, README › Code signing policy) starts once the repository variable
+# SIGNPATH_ORGANIZATION_ID and the secret SIGNPATH_API_TOKEN exist. The run then makes two signing requests, and each
+# waits for a maintainer to approve it on signpath.io: first Cleanup's own binaries (.signpath/app.xml), which go into
+# the installer, then the Setup.exe itself (.signpath/setup.xml). Until then releases are unsigned, as before.
 on:
   push:
     branches: [main]
@@ -11,6 +16,7 @@ on:
 
 permissions:
   contents: write
+  actions: read # SignPath reads the run and downloads the unsigned artifacts
 
 # One release at a time, in push order.
 concurrency:
@@ -20,6 +26,9 @@ concurrency:
 jobs:
   release:
     runs-on: windows-latest
+    timeout-minutes: 360 # each signing request waits up to 3 h for approval
+    env:
+      SIGN: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -43,8 +52,88 @@ jobs:
         shell: pwsh
         env:
           VERSION: ${{ steps.version.outputs.version }}
-        run: ./scripts/publish.ps1 -Version $env:VERSION
-      # The app trusts only the SHA-256 GitHub computes for the asset; the .sha256 file is for people checking by hand.
+        run: ./scripts/publish.ps1 -Version $env:VERSION -NoSetup
+
+      # 1st signing request: Cleanup.exe, the CLI, the UAC helper and their DLLs, before they go into the installer.
+      - name: Upload the unsigned app
+        id: upload-app
+        if: steps.version.outputs.skip != 'true' && env.SIGN == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: app-unsigned
+          path: artifacts/Cleanup/
+          if-no-files-found: error
+      - name: Sign the app (approve it on signpath.io)
+        if: steps.version.outputs.skip != 'true' && env.SIGN == 'true'
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3.0
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'cleanup-windows' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG || 'release-signing' }}
+          artifact-configuration-slug: app
+          github-artifact-id: ${{ steps.upload-app.outputs.artifact-id }}
+          parameters: |
+            version: "${{ steps.version.outputs.version }}"
+          wait-for-completion-timeout-in-seconds: 10800
+          output-artifact-directory: artifacts/Cleanup-signed
+      - name: Use the signed app
+        if: steps.version.outputs.skip != 'true' && env.SIGN == 'true'
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force artifacts/Cleanup
+          Move-Item artifacts/Cleanup-signed artifacts/Cleanup
+          foreach ($file in 'Cleanup.exe', 'Cleanup.dll', 'Cleanup.Core.dll', 'Cleanup.Platform.Windows.dll', 'Cleanup.Elevated.exe', 'Cleanup.Elevated.dll', 'cleanup-cli.exe', 'cleanup-cli.dll') {
+            $signature = Get-AuthenticodeSignature "artifacts/Cleanup/$file"
+            if ($signature.Status -ne 'Valid') { throw "$file não voltou assinado do SignPath ($($signature.Status))." }
+          }
+
+      - name: Installer
+        if: steps.version.outputs.skip != 'true'
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          ./scripts/setup.ps1 -Version $env:VERSION
+          if (-not (Test-Path "artifacts/Cleanup-Setup-$env:VERSION.exe")) { throw "O instalador não foi gerado." }
+
+      # 2nd signing request: the Setup.exe people download and the app installs as an update.
+      - name: Upload the unsigned installer
+        id: upload-setup
+        if: steps.version.outputs.skip != 'true' && env.SIGN == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: setup-unsigned
+          path: artifacts/Cleanup-Setup-${{ steps.version.outputs.version }}.exe
+          if-no-files-found: error
+      - name: Sign the installer (approve it on signpath.io)
+        if: steps.version.outputs.skip != 'true' && env.SIGN == 'true'
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3.0
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'cleanup-windows' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG || 'release-signing' }}
+          artifact-configuration-slug: setup
+          github-artifact-id: ${{ steps.upload-setup.outputs.artifact-id }}
+          parameters: |
+            version: "${{ steps.version.outputs.version }}"
+          wait-for-completion-timeout-in-seconds: 10800
+          output-artifact-directory: artifacts/setup-signed
+      - name: Use the signed installer
+        if: steps.version.outputs.skip != 'true' && env.SIGN == 'true'
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $setup = "artifacts/Cleanup-Setup-$env:VERSION.exe"
+          Move-Item -Force "artifacts/setup-signed/Cleanup-Setup-$env:VERSION.exe" $setup
+          $signature = Get-AuthenticodeSignature $setup
+          if ($signature.Status -ne 'Valid') { throw "O instalador não voltou assinado do SignPath ($($signature.Status))." }
+          Write-Host "Assinado por: $($signature.SignerCertificate.Subject)"
+
+      # The app trusts only the SHA-256 GitHub computes for the asset (and, once releases are signed, the publisher's
+      # signature); the .sha256 file is for people checking by hand.
       - name: Create release
         if: steps.version.outputs.skip != 'true'
         shell: pwsh
@@ -59,6 +148,12 @@ jobs:
           $previous = git describe --tags --match 'v*' --abbrev=0 2>$null
           $range = if ($previous) { "$previous..HEAD" } else { 'HEAD' }
           $changes = (git log $range --no-merges --format='- %s' | Select-Object -First 40) -join "`n"
+          $policy = "https://github.com/$env:GITHUB_REPOSITORY#code-signing-policy"
+          $signing = if ($env:SIGN -eq 'true') {
+            "O instalador e o Cleanup são assinados digitalmente, com assinatura gratuita para código aberto da [SignPath.io](https://about.signpath.io) e certificado da [SignPath Foundation](https://signpath.org). Por isso o Windows mostra ""SignPath Foundation"" como fornecedor. [Code signing policy]($policy)."
+          } else {
+            "O instalador não é assinado. Se o SmartScreen avisar, clique em ""Mais informações"" e depois em ""Executar assim mesmo""."
+          }
           $notes = @"
           Instalador do Cleanup para Windows $version.
 
@@ -67,6 +162,6 @@ jobs:
 
           Quem já tem o Cleanup instalado recebe esta versão sozinho (Ajustes › Atualizações). Para instalar pela primeira vez, baixe **Cleanup-Setup-$version.exe** e abra. A instalação é só para o seu usuário e não pede administrador. Ela cria o atalho no Menu Iniciar e aparece em Configurações › Aplicativos, por onde também se desinstala. O Windows 10 22H2 ou o Windows 11 (x64) são necessários.
 
-          O instalador não é assinado. Se o SmartScreen avisar, clique em "Mais informações" e depois em "Executar assim mesmo". SHA-256: ``$sha``
+          $signing SHA-256: ``$sha``
           "@
           gh release create "v$version" $setup "$setup.sha256" --target $env:GITHUB_SHA --title "Cleanup $version" --notes $notes

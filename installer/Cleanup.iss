@@ -21,6 +21,13 @@ AppVerName=Cleanup {#AppVersion}
 AppPublisher=Lucas Cardoso
 AppPublisherURL=https://github.com/LucasBCardoso/cleanup-windows
 VersionInfoVersion={#AppVersion}
+; File details shown in Properties › Details (Inno Setup pads these strings with spaces, see .signpath/setup.xml).
+VersionInfoProductName=Cleanup
+VersionInfoProductVersion={#AppVersion}
+VersionInfoProductTextVersion={#AppVersion}
+VersionInfoCompany=Lucas Cardoso
+VersionInfoCopyright=Copyright (c) 2026 Lucas Cardoso
+VersionInfoDescription=Instalador do Cleanup
 DefaultDirName={localappdata}\Programs\Cleanup
 DisableDirPage=yes
 DisableProgramGroupPage=yes

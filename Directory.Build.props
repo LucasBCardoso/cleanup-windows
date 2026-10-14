@@ -9,5 +9,11 @@
     <SupportedOSPlatformVersion Condition="$(TargetFramework.Contains('-windows'))">10.0.19041.0</SupportedOSPlatformVersion>
     <!-- major.minor from VERSION; publish.ps1 and the release pass the full -p:Version (scripts/version.ps1). -->
     <Version Condition="'$(Version)' == ''">$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)VERSION').Trim()).0</Version>
+    <!-- File details of every binary. SignPath signs a file only when its product name and version match the release
+         (.signpath/), so the product version stays the plain X.Y.N, without the commit hash the SDK appends. -->
+    <Product>Cleanup</Product>
+    <Company>Lucas Cardoso</Company>
+    <Copyright>Copyright (c) 2026 Lucas Cardoso</Copyright>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 </Project>
