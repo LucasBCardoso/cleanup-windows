@@ -10,7 +10,7 @@ The macOS repo is the reference implementation. Everything here follows its desi
 ## Download and install
 
 1. Open **[Releases](https://github.com/LucasBCardoso/cleanup-windows/releases/latest)** and download
-   `Cleanup-Setup-<version>.exe`. The repository is private, so sign in to GitHub with an account that has access.
+   `Cleanup-Setup-<version>.exe`.
 2. Run it. It needs Windows 10 22H2 or Windows 11 (x64); no administrator, .NET or Windows App SDK install is needed,
    because everything ships inside the installer.
 3. If SmartScreen warns about an unknown publisher (the installer isn't code-signed), choose **Mais informações →
@@ -22,38 +22,41 @@ The installer is for the current user only. It installs to `%LOCALAPPDATA%\Progr
 - an entry in **Configurações › Aplicativos**, which is also how you uninstall;
 - optionally, `cleanup` on the PATH for the CLI.
 
+Once installed, Cleanup **updates itself** (Ajustes › Atualizações, on by default). Every 6 hours it looks at the
+latest release, downloads its `Cleanup-Setup-<version>.exe`, checks it against the SHA-256 GitHub publishes for the
+file, and installs it silently when the window is closed (it comes back in the tray) or when you quit. Only copies
+installed by the Setup update themselves; a development build or the zip never does. Versions before 1.3 had no
+updater, so install 1.3 or later by hand once.
+
 Installing a newer version over an older one keeps everything. Uninstalling removes the app, its login entry and the
 `cleanup:` link, and keeps your history and settings in `%LOCALAPPDATA%\Cleanup`.
 
 | Situation | Command |
 |---|---|
-| Silent install, e.g. in a script | `Cleanup-Setup-1.0.0.exe /VERYSILENT /SUPPRESSMSGBOXES` |
+| Silent install, e.g. in a script | `Cleanup-Setup-1.3.0.exe /VERYSILENT /SUPPRESSMSGBOXES` |
 | Silent uninstall | `"%LOCALAPPDATA%\Programs\Cleanup\unins000.exe" /VERYSILENT` |
 
 ## Releasing a new version
 
-Releases are built by GitHub Actions (`.github/workflows/release.yml`). Pushing a tag that starts with `v` triggers a
-run that:
+Every push to `main` that changes the app is a release. GitHub Actions (`.github/workflows/release.yml`):
 
-1. tests the solution;
-2. builds the self-contained app and `Cleanup-Setup-<version>.exe`, taking the version from the tag;
-3. publishes a GitHub Release with the installer attached.
+1. computes the version with `scripts/version.ps1`: major.minor from the `VERSION` file, plus the number of commits
+   since `VERSION` last changed (`1.3` bumped five commits ago → `1.3.5`);
+2. tests the solution, and stops there if anything fails;
+3. builds the self-contained app and `Cleanup-Setup-<version>.exe`;
+4. publishes the GitHub Release `v<version>` with the installer, a `.sha256` file and the commits since the previous
+   release as notes. Installed copies pick it up within 6 hours.
 
-```powershell
-git tag -a v1.1.0 -m "Cleanup 1.1.0"
-git push origin v1.1.0
-```
-
-If the tests fail, nothing is published. Follow the run under **Actions › Release**.
-
-Every push to `main` also builds the installer in CI (`.github/workflows/ci.yml`), as the *Cleanup-Setup* artifact of
-that run. Use it to try a build before tagging it.
+Pushes that only touch Markdown or `docs/` don't release. To start a new minor or major line, change `VERSION`
+(for example to `1.4`); that commit is released as `1.4.0`. The workflow can also be run by hand from **Actions ›
+Release**. Pull requests are built and tested by `.github/workflows/ci.yml`, with the installer as the *Cleanup-Setup*
+artifact of the run.
 
 ### Building the installer locally
 
 ```powershell
 winget install JRSoftware.InnoSetup           # once
-./scripts/publish.ps1 -Version 1.1.0          # → artifacts\Cleanup-Setup-1.1.0.exe, artifacts\Cleanup (folder) and a zip
+./scripts/publish.ps1                         # → artifacts\Cleanup-Setup-<version>.exe, artifacts\Cleanup (folder) and a zip
 ./artifacts/Cleanup/install.ps1 -AddToPath    # install without the Setup.exe (same folder; -Uninstall to remove)
 ```
 

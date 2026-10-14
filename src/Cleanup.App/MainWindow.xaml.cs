@@ -46,6 +46,8 @@ public sealed partial class MainWindow : Window
             {
                 e.Cancel = true;
                 AppWindow.Hide();
+                // Nobody is looking now: a downloaded update installs and Cleanup comes back in the tray.
+                AppViewModels.SelfUpdate?.InstallWhenIdle();
             }
         };
         Closed += (_, _) => { if (!App.IsExiting) App.Quit(); };
@@ -249,4 +251,5 @@ public static class AppViewModels
     /// <summary>Created at launch (they need the UI dispatcher).</summary>
     public static HealthViewModel? Health { get; set; }
     public static AutoCleanViewModel? AutoClean { get; set; }
+    public static SelfUpdateViewModel? SelfUpdate { get; set; }
 }

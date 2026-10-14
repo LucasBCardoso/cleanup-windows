@@ -86,6 +86,24 @@
                 </Border>
             </StackPanel>
 
+            <StackPanel Spacing="8">
+                <TextBlock Text="ATUALIZAÇÕES" Style="{StaticResource SectionLabelStyle}" />
+                <ToggleSwitch x:Name="AutoUpdateSwitch" Header="Atualizar o Cleanup sozinho" Toggled="OnAutoUpdateToggled" />
+                <TextBlock Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap"
+                           Text="Procura versões novas no GitHub a cada 6 horas, baixa e confere o arquivo (SHA-256) e instala sem perguntar quando a janela estiver fechada, ou ao sair do Cleanup." />
+                <TextBlock x:Name="UpdateText" Style="{StaticResource CaptionTextStyle}" TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="CheckUpdateButton" Style="{StaticResource SubtleButtonStyle}" Click="OnCheckUpdate">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ProgressRing x:Name="CheckUpdateRing" Width="14" Height="14" IsActive="False" />
+                            <TextBlock Text="Procurar agora" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="InstallUpdateButton" Style="{StaticResource AccentButtonStyle}" Content="Instalar e reiniciar" Visibility="Collapsed" Click="OnInstallUpdate" />
+                    <HyperlinkButton Content="Ver novidades" Click="OnReleaseNotes" />
+                </StackPanel>
+            </StackPanel>
+
             <StackPanel Orientation="Horizontal" Spacing="12">
                 <HyperlinkButton Content="Rever introdução" Padding="0" Click="OnOnboarding" />
             </StackPanel>

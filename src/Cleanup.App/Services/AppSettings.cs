@@ -23,6 +23,10 @@ public sealed class AppSettings
     public DateTimeOffset? AutoCleanLastRun { get; set; }
     public string? AutoCleanLastSummary { get; set; }
 
+    /// <summary>Download and install new Cleanup releases by itself (Ajustes › Atualizações).</summary>
+    public bool AutoUpdate { get; set; } = true;
+    public DateTimeOffset? UpdateLastCheck { get; set; }
+
     /// <summary>When each health alert was last notified (at most one every 6 h per alert, across restarts).</summary>
     public Dictionary<string, DateTimeOffset> LastNotified { get; set; } = [];
 

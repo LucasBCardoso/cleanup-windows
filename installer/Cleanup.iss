@@ -59,11 +59,19 @@ Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; Value
 
 [Run]
 Filename: "{app}\Cleanup.exe"; Description: "Abrir o Cleanup"; Flags: nowait postinstall skipifsilent
+; The app updating itself runs this Setup with /VERYSILENT /RELAUNCH=1 (window) or 2 (tray only); 0 or none: stay closed.
+Filename: "{app}\Cleanup.exe"; Flags: nowait; Check: RelaunchAfterUpdate('1')
+Filename: "{app}\Cleanup.exe"; Parameters: "--background"; Flags: nowait; Check: RelaunchAfterUpdate('2')
 
 [UninstallDelete]
 Type: files; Name: "{app}\*.InstallLog"
 
 [Code]
+function RelaunchAfterUpdate(Mode: string): Boolean;
+begin
+  Result := WizardSilent and (ExpandConstant('{param:RELAUNCH|0}') = Mode);
+end;
+
 function NeedsAddPath(Dir: string): Boolean;
 var
   Path: string;

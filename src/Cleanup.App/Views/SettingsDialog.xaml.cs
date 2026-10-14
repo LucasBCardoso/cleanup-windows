@@ -1,4 +1,5 @@
 using Cleanup.App.Services;
+using Cleanup.App.ViewModels;
 using Cleanup.Core.AutoClean;
 using Cleanup.Core.Models;
 using Microsoft.UI.Xaml;
@@ -28,8 +29,11 @@ public sealed partial class SettingsDialog : ContentDialog
         ModeBox.SelectedIndex = (int)settings.AutoClean.Mode;
         SupportPath.Text = AppPaths.SupportDirectory;
         CfaText.Text = SystemInfo.ControlledFolderAccessText();
-        Version.Text = $"Cleanup para Windows {typeof(App).Assembly.GetName().Version?.ToString(3)} · convertido do Cleanup para Mac";
+        Version.Text = $"Cleanup para Windows {SelfUpdateViewModel.CurrentVersionText} · convertido do Cleanup para Mac";
+        AutoUpdateSwitch.IsOn = settings.AutoUpdate;
+        AutoUpdateSwitch.IsEnabled = CheckUpdateButton.IsEnabled = SelfUpdateViewModel.CanUpdateItself;
         UpdateAutoCleanTexts();
+        UpdateSelfUpdateTexts();
         loading = false;
     }
 
@@ -99,6 +103,42 @@ public sealed partial class SettingsDialog : ContentDialog
             UpdateAutoCleanTexts();
         }
     }
+
+    private void UpdateSelfUpdateTexts()
+    {
+        var updater = AppViewModels.SelfUpdate;
+        updater?.UpdateStatus();
+        UpdateText.Text = updater?.StatusText ?? "";
+        InstallUpdateButton.Visibility = updater?.Ready is null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void OnAutoUpdateToggled(object sender, RoutedEventArgs e)
+    {
+        if (loading) return;
+        settings.AutoUpdate = AutoUpdateSwitch.IsOn;
+        settings.Save();
+        UpdateSelfUpdateTexts();
+    }
+
+    private async void OnCheckUpdate(object sender, RoutedEventArgs e)
+    {
+        if (AppViewModels.SelfUpdate is not { } updater) return;
+        CheckUpdateButton.IsEnabled = false;
+        CheckUpdateRing.IsActive = true;
+        UpdateText.Text = "Procurando atualização…";
+        try { await updater.CheckAsync(automatic: false); }
+        finally
+        {
+            CheckUpdateRing.IsActive = false;
+            CheckUpdateButton.IsEnabled = true;
+            UpdateSelfUpdateTexts();
+        }
+    }
+
+    private void OnInstallUpdate(object sender, RoutedEventArgs e) => AppViewModels.SelfUpdate?.InstallNow();
+
+    private void OnReleaseNotes(object sender, RoutedEventArgs e) =>
+        AppServices.Open((AppViewModels.SelfUpdate?.ReleasePage ?? Cleanup.Core.SelfUpdate.ReleaseFeed.ReleasesPage).AbsoluteUri);
 
     private void OnOpenCfa(object sender, RoutedEventArgs e) => AppServices.Open("windowsdefender://ransomwareprotection");
 

@@ -46,6 +46,8 @@ public partial class App : Application
         AppViewModels.Health.Sampled += () => { if (tray is not null) tray.Tooltip = AppViewModels.Health.TrayTooltip(); };
         AppViewModels.Health.Start();
         AppViewModels.AutoClean.Start();
+        AppViewModels.SelfUpdate = new SelfUpdateViewModel(dispatcher);
+        AppViewModels.SelfUpdate.Start();
 
         Notifications.Register(link => Window.DispatcherQueue.TryEnqueue(() => ShowMainWindow(link)));
         if (settings.TrayEnabled) EnableTray(true);
@@ -109,6 +111,8 @@ public partial class App : Application
 
     public static void Quit()
     {
+        if (IsExiting) return;
+        AppViewModels.SelfUpdate?.InstallOnQuit();
         IsExiting = true;
         tray?.Dispose();
         tray = null;
