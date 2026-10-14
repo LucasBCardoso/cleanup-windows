@@ -94,6 +94,16 @@ public sealed class ReleaseFeedTests
     public void IsNewer(string release, string current, bool newer) =>
         Assert.Equal(newer, ReleaseFeed.IsNewer(new AppRelease(Version.Parse(release), new Uri("https://github.com/x"), Sha, ReleaseFeed.ReleasesPage), Version.Parse(current)));
 
+    [Theory]
+    [InlineData(null, null, true)]
+    [InlineData(null, "SignPath Foundation", true)]
+    [InlineData("SignPath Foundation", "SignPath Foundation", true)]
+    [InlineData("SignPath Foundation", null, false)]
+    [InlineData("SignPath Foundation", "Someone Else", false)]
+    [InlineData("SignPath Foundation", "signpath foundation", false)]
+    public void SignatureAccepted(string? running, string? download, bool accepted) =>
+        Assert.Equal(accepted, ReleaseFeed.SignatureAccepted(running, download));
+
     [Fact]
     public void MatchesOnlyTheExactBytes()
     {

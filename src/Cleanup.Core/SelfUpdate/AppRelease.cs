@@ -13,7 +13,8 @@ public sealed record AppRelease(Version Version, Uri Installer, string Sha256, U
 /// <summary>
 /// The app updating itself from GitHub Releases (every push to main publishes vX.Y.N with Cleanup-Setup-X.Y.N.exe).
 /// Only a release with a well-formed tag, its matching installer on github.com over https and a SHA-256 digest is
-/// trusted; the download is installed only when its hash matches.
+/// trusted; the download is installed only when its hash matches and, once Cleanup itself is code-signed, when the
+/// installer is signed by the same publisher (<see cref="SignatureAccepted"/>).
 /// </summary>
 public static partial class ReleaseFeed
 {
@@ -61,6 +62,14 @@ public static partial class ReleaseFeed
         using var stream = File.OpenRead(path);
         return CryptographicOperations.FixedTimeEquals(SHA256.HashData(stream), Convert.FromHexString(sha256));
     }
+
+    /// <summary>
+    /// The Authenticode rule on top of the SHA-256: a signed Cleanup (<paramref name="running"/> = its signer) installs
+    /// only an installer validly signed by that same signer; an unsigned one (≤1.3.x, development builds) accepts any,
+    /// so it can move to the first signed release. Signer names are compared ordinally; null means unsigned or invalid.
+    /// </summary>
+    public static bool SignatureAccepted(string? running, string? download) =>
+        running is null || string.Equals(running, download, StringComparison.Ordinal);
 
     private static string? Sha256Of(string? digest) =>
         digest is not null && DigestPattern().Match(digest) is { Success: true } m ? m.Groups[1].Value.ToLowerInvariant() : null;

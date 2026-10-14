@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Cleanup.App.Services;
 using Cleanup.Core.Models;
 using Cleanup.Core.SelfUpdate;
+using Cleanup.Platform.Windows;
 using Microsoft.UI.Dispatching;
 
 namespace Cleanup.App.ViewModels;
@@ -15,6 +16,8 @@ public enum Relaunch { None = 0, Window = 1, Background = 2 }
 /// <summary>
 /// Cleanup updating itself from GitHub Releases. Every 6 h (and 1 min after launch) it reads the latest release,
 /// downloads its Setup.exe to <c>%LOCALAPPDATA%\Cleanup\updates</c> and checks it against the SHA-256 GitHub published.
+/// When this Cleanup.exe is code-signed, the installer must also carry a valid Authenticode signature from the same
+/// publisher, so a compromised GitHub release can't push a foreign build; an unsigned install relies on the hash alone.
 /// The silent install runs only when nobody is using the window: right away in the tray, when the window is closed
 /// to the tray, when Cleanup quits, or from Ajustes › "Instalar e reiniciar". Only a copy installed by Setup.exe
 /// updates itself, so development builds and the zip are left alone.
@@ -25,6 +28,9 @@ public sealed partial class SelfUpdateViewModel : ObservableObject
     public static readonly TimeSpan FirstCheck = TimeSpan.FromMinutes(1);
 
     private static readonly HttpClient Http = CreateClient();
+    /// <summary>Who signed the running Cleanup.exe (null when unsigned): the publisher every update must match.</summary>
+    private static readonly Lazy<string?> RunningSigner = new(() => Environment.ProcessPath is { } exe ? Authenticode.Signer(exe) : null);
+    private const string NotSignedError = "o instalador baixado não tem a assinatura digital do Cleanup.";
     private readonly AppSettings settings = AppServices.Shared.Settings;
     private readonly DispatcherQueue dispatcher;
     private Timer? timer;
@@ -131,6 +137,15 @@ public sealed partial class SelfUpdateViewModel : ObservableObject
                 UpdateStatus();
                 return false;
             }
+            if (!SignedByPublisher(readyPath))
+            {
+                Discard(readyPath);
+                Ready = null;
+                readyPath = null;
+                lastError = "Atualização recusada: " + NotSignedError;
+                UpdateStatus();
+                return false;
+            }
             var start = new ProcessStartInfo(readyPath) { UseShellExecute = false };
             foreach (var arg in new[] { "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CLOSEAPPLICATIONS", $"/RELAUNCH={(int)relaunch}" })
                 start.ArgumentList.Add(arg);
@@ -193,12 +208,15 @@ public sealed partial class SelfUpdateViewModel : ObservableObject
         return release;
     }
 
-    /// <summary>Downloads to a .part file and keeps it only when the SHA-256 matches; older downloads are removed.</summary>
+    /// <summary>
+    /// Downloads to a .part file and keeps it only when the SHA-256 matches and the signature is accepted
+    /// (<see cref="SignedByPublisher"/>); older downloads are removed.
+    /// </summary>
     private static async Task<string> DownloadAsync(AppRelease release)
     {
         Directory.CreateDirectory(Folder);
         var path = Path.Combine(Folder, release.InstallerName);
-        if (File.Exists(path) && ReleaseFeed.Matches(path, release.Sha256)) return path;
+        if (File.Exists(path) && ReleaseFeed.Matches(path, release.Sha256)) return RequireSignature(path);
         foreach (var old in Directory.GetFiles(Folder))
         {
             try { File.Delete(old); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
@@ -217,7 +235,30 @@ public sealed partial class SelfUpdateViewModel : ObservableObject
             throw new InvalidDataException("o arquivo baixado não confere com o SHA-256 publicado no GitHub.");
         }
         File.Move(part, path, overwrite: true);
-        return path;
+        return RequireSignature(path);
+    }
+
+    /// <summary>A signed Cleanup installs only a Setup signed by the same publisher; an unsigned one accepts any (the way to the first signed release).</summary>
+    private static bool SignedByPublisher(string path)
+    {
+        var running = RunningSigner.Value;
+        var signer = Authenticode.Signer(path);
+        if (ReleaseFeed.SignatureAccepted(running, signer)) return true;
+        Log.Write($"self-update: {Path.GetFileName(path)} is signed by '{signer ?? "nobody"}', not '{running}'; discarded");
+        return false;
+    }
+
+    /// <summary>The verified download, or it is deleted and the check fails like a hash mismatch.</summary>
+    private static string RequireSignature(string path)
+    {
+        if (SignedByPublisher(path)) return path;
+        Discard(path);
+        throw new InvalidDataException(NotSignedError);
+    }
+
+    private static void Discard(string path)
+    {
+        try { File.Delete(path); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
     }
 
     private static HttpClient CreateClient()
