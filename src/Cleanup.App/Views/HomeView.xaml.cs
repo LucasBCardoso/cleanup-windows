@@ -20,6 +20,8 @@ public sealed partial class HomeView : UserControl
         Greeting.Text = GreetingFor(DateTime.Now.Hour, Environment.UserName);
         Loaded += async (_, _) =>
         {
+            var name = await Task.Run(CurrentUser.FirstName);
+            Greeting.Text = GreetingFor(DateTime.Now.Hour, name);
             await RefreshTilesAsync();
             await History.ReloadAsync();
             await RefreshAppTilesAsync();
@@ -31,12 +33,12 @@ public sealed partial class HomeView : UserControl
         };
     }
 
-    /// <summary>"Bom dia, Lucas" — the same greeting rules as the macOS HomeSummary.</summary>
+    /// <summary>"Bom dia, Ana" — the same greeting rules as the macOS HomeSummary; the name is the account's real first name.</summary>
     public string GreetingFor(int hour, string name)
     {
         var part = hour < 5 ? "Boa noite" : hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
-        var first = name.Split([' ', '.', '_'], StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-        return string.IsNullOrEmpty(first) ? part : $"{part}, {char.ToUpper(first[0]) + first[1..]}";
+        var first = CurrentUser.FirstNameOf(name);
+        return first.Length == 0 ? part : $"{part}, {first}";
     }
 
     private async Task RefreshTilesAsync()
