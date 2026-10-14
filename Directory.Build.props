@@ -7,5 +7,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WindowsTarget>net10.0-windows10.0.19041.0</WindowsTarget>
     <SupportedOSPlatformVersion Condition="$(TargetFramework.Contains('-windows'))">10.0.19041.0</SupportedOSPlatformVersion>
+    <!-- major.minor from VERSION; publish.ps1 and the release pass the full -p:Version (scripts/version.ps1). -->
+    <Version Condition="'$(Version)' == ''">$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)VERSION').Trim()).0</Version>
   </PropertyGroup>
 </Project>

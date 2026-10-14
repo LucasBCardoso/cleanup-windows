@@ -4,11 +4,11 @@
   Cleanup.Elevated.exe (UAC helper) in one folder, plus a zip next to it. No .NET or Windows App SDK install needed.
 
 .EXAMPLE
-  ./scripts/publish.ps1                 # → artifacts/Cleanup and artifacts/Cleanup-win-x64.zip
+  ./scripts/publish.ps1                 # version from scripts/version.ps1 → artifacts/Cleanup and artifacts/Cleanup-win-x64.zip
   ./scripts/publish.ps1 -Version 1.2.0
 #>
 param(
-    [string]$Version = '1.0.0',
+    [string]$Version = (& (Join-Path $PSScriptRoot 'version.ps1')),
     [string]$Runtime = 'win-x64',
     [string]$Out = (Join-Path $PSScriptRoot '..\artifacts')
 )

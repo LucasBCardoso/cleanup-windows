@@ -1,48 +1,72 @@
 name: Release
 
-# Push a tag like v1.2.0 → build, test, Setup.exe with that version, GitHub Release with the installer attached.
+# Every push to main that changes the app → tests, Setup.exe and a GitHub Release vX.Y.N (scripts/version.ps1: VERSION
+# plus the commits since it changed), with the commits since the last release as notes. The installed app finds it
+# there and updates itself (SelfUpdateViewModel). Also runs by hand from the Actions tab.
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+    paths-ignore: ['**.md', 'docs/**', '.github/workflows/ci.yml']
+  workflow_dispatch:
 
 permissions:
   contents: write
+
+# One release at a time, in push order.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0 # the version counts commits and the notes list them
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           global-json-file: global.json
-      # The tag reaches the scripts only through $env:TAG, never pasted into them, and must look like v1.2.3.
-      - name: Check tag
+      - name: Version
+        id: version
         shell: pwsh
-        env:
-          TAG: ${{ github.ref_name }}
-        run: if ($env:TAG -notmatch '^v\d+\.\d+\.\d+$') { throw "A tag precisa ser vX.Y.Z, veio '$env:TAG'." }
+        run: |
+          $version = ./scripts/version.ps1
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Versão inválida: '$version'." }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          if (git tag --list "v$version") { Write-Host "v$version já foi publicada."; "skip=true" >> $env:GITHUB_OUTPUT }
       - name: Test
+        if: steps.version.outputs.skip != 'true'
         run: dotnet test Cleanup.sln -c Release
       - name: Publish
+        if: steps.version.outputs.skip != 'true'
         shell: pwsh
         env:
-          TAG: ${{ github.ref_name }}
-        run: ./scripts/publish.ps1 -Version ($env:TAG.TrimStart('v'))
+          VERSION: ${{ steps.version.outputs.version }}
+        run: ./scripts/publish.ps1 -Version $env:VERSION
+      # The app trusts only the SHA-256 GitHub computes for the asset; the .sha256 file is for people checking by hand.
       - name: Create release
+        if: steps.version.outputs.skip != 'true'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          $version = $env:TAG.TrimStart('v')
+          $version = $env:VERSION
+          $setup = "artifacts/Cleanup-Setup-$version.exe"
+          $sha = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$sha  Cleanup-Setup-$version.exe" | Set-Content "$setup.sha256" -Encoding ascii
+          $previous = git describe --tags --match 'v*' --abbrev=0 2>$null
+          $range = if ($previous) { "$previous..HEAD" } else { 'HEAD' }
+          $changes = (git log $range --no-merges --format='- %s' | Select-Object -First 40) -join "`n"
           $notes = @"
           Instalador do Cleanup para Windows $version.
 
-          Baixe **Cleanup-Setup-$version.exe** e abra. A instalação é só para o seu usuário e não pede administrador.
-          Ela cria o atalho no Menu Iniciar e aparece em Configurações › Aplicativos, por onde também se desinstala.
-          O Windows 10 22H2 ou o Windows 11 (x64) são necessários.
+          **O que mudou**
+          $changes
 
-          O instalador não é assinado. Se o SmartScreen avisar, clique em "Mais informações" e depois em "Executar assim mesmo".
+          Quem já tem o Cleanup instalado recebe esta versão sozinho (Ajustes › Atualizações). Para instalar pela primeira vez, baixe **Cleanup-Setup-$version.exe** e abra. A instalação é só para o seu usuário e não pede administrador. Ela cria o atalho no Menu Iniciar e aparece em Configurações › Aplicativos, por onde também se desinstala. O Windows 10 22H2 ou o Windows 11 (x64) são necessários.
+
+          O instalador não é assinado. Se o SmartScreen avisar, clique em "Mais informações" e depois em "Executar assim mesmo". SHA-256: ``$sha``
           "@
-          gh release create $env:TAG"artifacts/Cleanup-Setup-$version.exe" --title "Cleanup $version" --notes $notes
+          gh release create "v$version" $setup "$setup.sha256" --target $env:GITHUB_SHA --title "Cleanup $version" --notes $notes

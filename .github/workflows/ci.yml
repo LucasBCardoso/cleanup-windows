@@ -1,9 +1,9 @@
 name: CI
 
+# Pull requests only: every push to main is already built, tested and released by release.yml.
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_dispatch:
 
 # Public repo: the token only reads, even if the repository default is read/write.
 permissions:
@@ -24,7 +24,7 @@ jobs:
       # Self-contained folder, zip and Setup.exe (Inno Setup is preinstalled on GitHub's Windows runners).
       - name: Publish
         shell: pwsh
-        run: ./scripts/publish.ps1 -Version "1.0.${{ github.run_number }}"
+        run: ./scripts/publish.ps1
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: Cleanup-Setup
